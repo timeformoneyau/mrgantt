@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;700;900&family=Poppins:wght@400;500;600;700&display=swap');
 
 html,
 body,
@@ -8,10 +9,11 @@ body,
 
 body {
   overflow: hidden;
-  background: #f8f9fa;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  color: #111827;
+  background: #FBF9F3;
+  font-family: 'Poppins', 'Arial', system-ui, sans-serif;
+  color: #000404;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Slim scrollbars */

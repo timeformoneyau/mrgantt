@@ -91,7 +91,7 @@ export function GanttChart() {
   // Empty state
   if (rows.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#FBF9F3' }}>
         <Toolbar />
         <div
           style={{
@@ -100,17 +100,16 @@ export function GanttChart() {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#9ca3af',
             gap: 16,
           }}
         >
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <rect x="4" y="14" width="28" height="8" rx="4" fill="#e5e7eb" />
-            <rect x="16" y="27" width="28" height="8" rx="4" fill="#e5e7eb" />
+            <rect x="4" y="14" width="28" height="8" rx="4" fill="#E8E6DE" />
+            <rect x="16" y="27" width="28" height="8" rx="4" fill="#55F366" opacity="0.4" />
           </svg>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#374151', marginBottom: 4 }}>No lanes yet</div>
-            <div style={{ fontSize: 13 }}>Click <strong>Add Lane</strong> in the toolbar to get started.</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#000404', marginBottom: 4, fontFamily: "'Poppins', Arial, sans-serif" }}>No lanes yet</div>
+            <div style={{ fontSize: 13, color: '#B0AEA5', fontFamily: "'Poppins', Arial, sans-serif" }}>Click <strong style={{ color: '#000404' }}>Add Lane</strong> in the toolbar to get started.</div>
           </div>
         </div>
       </div>
@@ -124,7 +123,7 @@ export function GanttChart() {
         flexDirection: 'column',
         height: '100%',
         overflow: 'hidden',
-        background: '#f8f9fa',
+        background: '#FBF9F3',
       }}
     >
       <Toolbar />
@@ -155,7 +154,7 @@ export function GanttChart() {
                 left: 0,
                 zIndex: 20,
                 flexShrink: 0,
-                background: '#fff',
+                background: '#FFFFFF',
               }}
             >
               <RowPanel rows={rows} tasks={tasks} />

@@ -11,80 +11,58 @@ interface ColorPickerProps {
 
 export function ColorPicker({ value, onChange, compact = false }: ColorPickerProps) {
   const [showFull, setShowFull] = useState(false)
+  const size = compact ? 18 : 22
 
   return (
-    <div style={{ position: 'relative' }}>
-      {/* Swatch grid */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: compact ? 5 : 7 }}>
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: compact ? 5 : 6, alignItems: 'center' }}>
         {COLOR_SWATCHES.map((color) => (
           <button
             key={color}
             onClick={() => onChange(color)}
             title={color}
             style={{
-              width: compact ? 20 : 24,
-              height: compact ? 20 : 24,
-              borderRadius: '50%',
-              border: value === color ? '2.5px solid #111827' : '2px solid transparent',
+              width: size, height: size, borderRadius: '50%',
+              border: value === color ? '2px solid #000404' : '1px solid rgba(0,4,4,0.08)',
               background: color,
-              cursor: 'pointer',
-              outline: value === color ? '1.5px solid white' : 'none',
+              cursor: 'pointer', padding: 0,
+              outline: value === color ? '1.5px solid #FBF9F3' : 'none',
               outlineOffset: '-4px',
-              padding: 0,
               transition: 'transform 0.1s',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+              boxShadow: '0 1px 2px rgba(0,4,4,0.12)',
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.15)' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.18)' }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)' }}
           />
         ))}
-        {/* Custom color trigger */}
+        {/* Custom */}
         <button
           onClick={() => setShowFull((v) => !v)}
-          title="Custom color"
+          title="Custom colour"
           style={{
-            width: compact ? 20 : 24,
-            height: compact ? 20 : 24,
-            borderRadius: '50%',
-            border: '2px dashed #d1d5db',
-            background: 'white',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 0,
-            fontSize: compact ? 11 : 13,
-            color: '#9ca3af',
+            width: size, height: size, borderRadius: '50%',
+            border: '1.5px dashed #B0AEA5', background: '#FBF9F3',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, color: '#B0AEA5', padding: 0,
+            transition: 'border-color 0.1s',
           }}
-        >
-          +
-        </button>
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#000404' }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#B0AEA5' }}
+        >+</button>
       </div>
 
-      {/* Full color input */}
       {showFull && (
         <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
-            type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            style={{ width: 40, height: 32, border: '1px solid #d1d5db', borderRadius: 6, padding: 2, cursor: 'pointer' }}
+            type="color" value={value} onChange={(e) => onChange(e.target.value)}
+            style={{ width: 36, height: 30, border: '1px solid #E8E6DE', borderRadius: 5, padding: 2, cursor: 'pointer' }}
           />
           <input
-            type="text"
-            value={value}
-            onChange={(e) => {
-              const v = e.target.value
-              if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v)
-            }}
+            type="text" value={value}
+            onChange={(e) => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) onChange(e.target.value) }}
             style={{
-              flex: 1,
-              padding: '5px 8px',
-              border: '1px solid #d1d5db',
-              borderRadius: 6,
-              fontSize: 12,
-              fontFamily: 'monospace',
-              outline: 'none',
+              flex: 1, padding: '5px 8px', border: '1px solid #E8E6DE', borderRadius: 5,
+              fontSize: 11, fontFamily: 'monospace', outline: 'none', color: '#000404',
             }}
           />
         </div>
