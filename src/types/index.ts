@@ -13,6 +13,7 @@ export interface Row {
   id: string
   name: string
   order: number
+  isSystem?: boolean // true for built-in rows (e.g. Unassigned) — cannot be deleted or reordered
 }
 
 export interface Divider {

@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useRef, useEffect, useCallback } from 'react'
+import React, { useRef, useEffect, useCallback, useState } from 'react'
+import { addDays, format } from 'date-fns'
 import { useGanttStore } from '@/store/ganttStore'
 import { Toolbar } from '@/components/ui/Toolbar'
 import { TimelineHeader } from './TimelineHeader'
@@ -8,6 +9,7 @@ import { ChartArea } from './ChartArea'
 import { RowPanel } from './RowPanel'
 import { DependencyLayer } from './DependencyLayer'
 import { DividerLayer } from './DividerLayer'
+import { DragClone } from './DragClone'
 import { TaskSidePanel } from './TaskSidePanel'
 import {
   getTotalWidth,
@@ -16,22 +18,72 @@ import {
   ROW_HEIGHT,
   dateToX,
   parseDate,
+  formatDate,
 } from '@/lib/timeline'
 import { getSubLaneCount } from '@/lib/taskLayout'
 import { useTheme } from '@/lib/theme'
+import { Task, Row } from '@/types'
 
+// ---------------------------------------------------------------------------
+// Move-drag state
+// ---------------------------------------------------------------------------
+interface MoveState {
+  taskId: string
+  task: Task
+  /** clientX where the drag started */
+  startClientX: number
+  /** Offset from bar's left edge to cursor when drag started */
+  grabOffsetX: number
+  /** Offset from bar's top edge to cursor when drag started */
+  grabOffsetY: number
+  barWidth: number
+  pointerId: number
+  /** Continuously updated: the row the cursor is currently over */
+  currentRowId: string
+}
+
+interface MoveCloneData {
+  task: Task
+  barWidth: number
+  /** barRect.left at drag start — initial transform X */
+  initialX: number
+  /** barRect.top at drag start — initial transform Y */
+  initialY: number
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 export function GanttChart() {
   const {
     tasks, rows, dividers, dependencies,
     viewState, selectedTaskId, sidePanelOpen,
     selectTask, setSidePanelOpen,
+    updateTask,
     undo, redo,
   } = useGanttStore()
   const theme = useTheme()
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Sync body background so no eggshell bleed-through at edges in dark mode
+  // Move-drag
+  const moveStateRef = useRef<MoveState | null>(null)
+  const cloneRef = useRef<HTMLDivElement | null>(null)
+  const dateLabelRef = useRef<HTMLSpanElement | null>(null)
+  const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
+  const [moveClone, setMoveClone] = useState<MoveCloneData | null>(null)
+
+  // Stable refs for data accessed in event handlers (avoid stale closures)
+  const sortedRowsRef = useRef<Row[]>([])
+  const tasksRef = useRef<Task[]>([])
+  const viewStateDayWidthRef = useRef(viewState.dayWidth)
+
+  const sortedRows = [...rows].sort((a, b) => a.order - b.order)
+  sortedRowsRef.current = sortedRows
+  tasksRef.current = tasks
+  viewStateDayWidthRef.current = viewState.dayWidth
+
+  // Sync body background with theme
   useEffect(() => {
     document.body.style.background = theme.bg
   }, [theme.bg])
@@ -53,7 +105,14 @@ export function GanttChart() {
         e.preventDefault()
         redo()
       } else if (e.key === 'Escape') {
-        selectTask(null)
+        if (moveStateRef.current) {
+          // Cancel in-flight drag
+          moveStateRef.current = null
+          setMovingTaskId(null)
+          setMoveClone(null)
+        } else {
+          selectTask(null)
+        }
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -82,11 +141,151 @@ export function GanttChart() {
     scrollRef.current.scrollLeft = targetScrollLeft
   }, [viewState.startDate, viewState.dayWidth])
 
+  // ---------------------------------------------------------------------------
+  // Row detection from clientY (uses refs for fresh data)
+  // ---------------------------------------------------------------------------
+  const getRowIdFromClientY = useCallback((clientY: number): string | null => {
+    const scrollEl = scrollRef.current
+    if (!scrollEl) return null
+    const rect = scrollEl.getBoundingClientRect()
+    const relY = clientY - rect.top + scrollEl.scrollTop - HEADER_HEIGHT
+
+    const sorted = sortedRowsRef.current
+    const tks = tasksRef.current
+
+    let y = 0
+    for (const row of sorted) {
+      const rowTasks = tks.filter((t) => t.rowId === row.id)
+      const numLanes = Math.max(1, getSubLaneCount(rowTasks))
+      const h = numLanes * ROW_HEIGHT
+      if (relY >= y && relY < y + h) return row.id
+      y += h
+    }
+    // Clamp to first / last row
+    if (relY < 0 && sorted.length > 0) return sorted[0].id
+    if (sorted.length > 0) return sorted[sorted.length - 1].id
+    return null
+  }, []) // intentionally empty — reads from refs
+
+  const getRowIdFromClientYRef = useRef(getRowIdFromClientY)
+  getRowIdFromClientYRef.current = getRowIdFromClientY
+
+  // ---------------------------------------------------------------------------
+  // Global pointer listeners for move-drag
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    function handlePointerMove(e: PointerEvent) {
+      const ms = moveStateRef.current
+      if (!ms || e.pointerId !== ms.pointerId) return
+
+      // 1. Move the clone container (bar + date label move together)
+      if (cloneRef.current) {
+        const x = e.clientX - ms.grabOffsetX
+        const y = e.clientY - ms.grabOffsetY
+        cloneRef.current.style.transform = `translate(${x}px, ${y}px)`
+      }
+
+      // 2. Update the date label text directly (no React re-render)
+      if (dateLabelRef.current) {
+        const dx = e.clientX - ms.startClientX
+        const daysDelta = Math.round(dx / viewStateDayWidthRef.current)
+        const newStart = addDays(parseDate(ms.task.startDate), daysDelta)
+        const newEnd = addDays(parseDate(ms.task.endDate), daysDelta)
+        dateLabelRef.current.textContent = `${format(newStart, 'MMM d')} → ${format(newEnd, 'MMM d')}`
+      }
+
+      // 3. Detect hovered row (lightweight — no setState, just mutate ref)
+      const rowId = getRowIdFromClientYRef.current(e.clientY)
+      if (rowId) ms.currentRowId = rowId
+    }
+
+    function handlePointerUp(e: PointerEvent) {
+      const ms = moveStateRef.current
+      if (!ms || e.pointerId !== ms.pointerId) return
+
+      const dx = e.clientX - ms.startClientX
+      const daysDelta = Math.round(dx / viewStateDayWidthRef.current)
+      const newStart = formatDate(addDays(parseDate(ms.task.startDate), daysDelta))
+      const newEnd = formatDate(addDays(parseDate(ms.task.endDate), daysDelta))
+      const newRowId = ms.currentRowId
+
+      if (
+        newStart !== ms.task.startDate ||
+        newEnd !== ms.task.endDate ||
+        newRowId !== ms.task.rowId
+      ) {
+        updateTask(ms.taskId, { startDate: newStart, endDate: newEnd, rowId: newRowId })
+      }
+
+      moveStateRef.current = null
+      setMovingTaskId(null)
+      setMoveClone(null)
+    }
+
+    function handlePointerCancel(e: PointerEvent) {
+      const ms = moveStateRef.current
+      if (!ms || e.pointerId !== ms.pointerId) return
+      moveStateRef.current = null
+      setMovingTaskId(null)
+      setMoveClone(null)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerCancel)
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerCancel)
+    }
+  }, [updateTask]) // updateTask is stable from Zustand
+
+  // ---------------------------------------------------------------------------
+  // Move-drag start (called by TaskBar via onMoveStart prop)
+  // ---------------------------------------------------------------------------
+  const handleMoveStart = useCallback((taskId: string, e: React.PointerEvent, barEl: HTMLDivElement) => {
+    const task = tasksRef.current.find((t) => t.id === taskId)
+    if (!task) return
+
+    const barRect = barEl.getBoundingClientRect()
+    const grabOffsetX = e.clientX - barRect.left
+    const grabOffsetY = e.clientY - barRect.top
+
+    moveStateRef.current = {
+      taskId,
+      task,
+      startClientX: e.clientX,
+      grabOffsetX,
+      grabOffsetY,
+      barWidth: barRect.width,
+      pointerId: e.pointerId,
+      currentRowId: task.rowId,
+    }
+
+    // Trigger React render to mount DragClone (the clone will appear at initialX/Y)
+    setMovingTaskId(taskId)
+    setMoveClone({
+      task,
+      barWidth: barRect.width,
+      initialX: barRect.left,
+      initialY: barRect.top,
+    })
+
+    // Set initial date label text
+    requestAnimationFrame(() => {
+      if (dateLabelRef.current) {
+        const start = parseDate(task.startDate)
+        const end = parseDate(task.endDate)
+        dateLabelRef.current.textContent = `${format(start, 'MMM d')} → ${format(end, 'MMM d')}`
+      }
+    })
+  }, [])
+
+  // ---------------------------------------------------------------------------
   // Derived layout values
-  const sortedRows = [...rows].sort((a, b) => a.order - b.order)
+  // ---------------------------------------------------------------------------
   const totalWidth = getTotalWidth(viewState.startDate, viewState.endDate, viewState.dayWidth)
 
-  // Compute row y positions and total height
   const rowYPositions = new Map<string, number>()
   let totalHeight = 0
   for (const row of sortedRows) {
@@ -96,7 +295,9 @@ export function GanttChart() {
     totalHeight += numLanes * ROW_HEIGHT
   }
 
+  // ---------------------------------------------------------------------------
   // Empty state
+  // ---------------------------------------------------------------------------
   if (rows.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bg }}>
@@ -144,7 +345,7 @@ export function GanttChart() {
           {/* Timeline header — sticky top */}
           <TimelineHeader viewState={viewState} totalWidth={totalWidth} />
 
-          {/* Content rows — sticky left panel cells + chart area */}
+          {/* Content rows — sticky left panel + chart area */}
           <div style={{ display: 'flex', minWidth: LEFT_PANEL_WIDTH + totalWidth, minHeight: `calc(100% - ${HEADER_HEIGHT}px)`, alignItems: 'stretch' }}>
             {/* Left panel — row names */}
             <div
@@ -170,8 +371,10 @@ export function GanttChart() {
               totalWidth={totalWidth}
               rowYPositions={rowYPositions}
               totalHeight={totalHeight}
+              movingTaskId={movingTaskId}
+              onMoveStart={handleMoveStart}
             >
-              {/* Dependency arrows — rendered as SVG overlay */}
+              {/* Dependency arrows */}
               <DependencyLayer
                 tasks={tasks}
                 dependencies={dependencies}
@@ -205,6 +408,20 @@ export function GanttChart() {
           />
         )}
       </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Floating drag clone — portal to document.body, 60fps via ref       */}
+      {/* ------------------------------------------------------------------ */}
+      {moveClone && (
+        <DragClone
+          task={moveClone.task}
+          width={moveClone.barWidth}
+          initialX={moveClone.initialX}
+          initialY={moveClone.initialY}
+          cloneRef={cloneRef}
+          dateLabelRef={dateLabelRef}
+        />
+      )}
     </div>
   )
 }

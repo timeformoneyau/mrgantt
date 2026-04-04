@@ -14,6 +14,7 @@ function makeInitialData() {
   const fmt = (d: Date) => formatDate(d)
 
   const rows: Row[] = [
+    { id: 'row-unassigned', name: 'Unassigned', order: -1, isSystem: true },
     { id: 'row-1', name: 'Product', order: 0 },
     { id: 'row-2', name: 'Design', order: 1 },
     { id: 'row-3', name: 'Engineering', order: 2 },
@@ -134,7 +135,7 @@ interface GanttStore {
 
   // Tasks
   addTask: (
-    partial: Omit<Task, 'id' | 'color'> & { color?: string }
+    partial: Omit<Task, 'id' | 'color' | 'rowId'> & { color?: string; rowId?: string }
   ) => string
   updateTask: (id: string, updates: Partial<Task>) => void
   deleteTask: (id: string) => void
@@ -221,7 +222,14 @@ export const useGanttStore = create<GanttStore>()(
         // Single source of truth: Tiimely palette from colors.ts
         const color = partial.color ?? TASK_COLORS[_colorIndex % TASK_COLORS.length]
         const id = uuidv4()
-        const task: Task = { ...partial, id, color, description: partial.description ?? '', owner: partial.owner ?? '' }
+        const task: Task = {
+          ...partial,
+          id,
+          color,
+          description: partial.description ?? '',
+          owner: partial.owner ?? '',
+          rowId: partial.rowId ?? 'row-unassigned',
+        }
         set((s) => ({
           tasks: [...s.tasks, task],
           _colorIndex: s._colorIndex + (partial.color ? 0 : 1),
@@ -271,6 +279,8 @@ export const useGanttStore = create<GanttStore>()(
       },
 
       deleteRow: (id) => {
+        const row = get().rows.find((r) => r.id === id)
+        if (row?.isSystem) return // system rows cannot be deleted
         get()._pushHistory()
         set((s) => ({
           rows: s.rows.filter((r) => r.id !== id),
@@ -279,11 +289,14 @@ export const useGanttStore = create<GanttStore>()(
       },
 
       moveRowUp: (id) => {
+        const row = get().rows.find((r) => r.id === id)
+        if (row?.isSystem) return
         get()._pushHistory()
         set((s) => {
           const sorted = [...s.rows].sort((a, b) => a.order - b.order)
           const idx = sorted.findIndex((r) => r.id === id)
-          if (idx <= 0) return {}
+          // Don't swap with system rows
+          if (idx <= 0 || sorted[idx - 1].isSystem) return {}
           const rows = sorted.map((r, i) => {
             if (i === idx) return { ...r, order: sorted[idx - 1].order }
             if (i === idx - 1) return { ...r, order: sorted[idx].order }
@@ -294,6 +307,8 @@ export const useGanttStore = create<GanttStore>()(
       },
 
       moveRowDown: (id) => {
+        const row = get().rows.find((r) => r.id === id)
+        if (row?.isSystem) return
         get()._pushHistory()
         set((s) => {
           const sorted = [...s.rows].sort((a, b) => a.order - b.order)
@@ -411,7 +426,7 @@ export const useGanttStore = create<GanttStore>()(
       },
     }),
     {
-      name: 'mrgant-v2',
+      name: 'mrgant-v3',
       // Only persist data + view — not UI state or history stacks
       partialize: (state) => ({
         tasks: state.tasks,

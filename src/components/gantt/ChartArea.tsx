@@ -36,11 +36,16 @@ interface ChartAreaProps {
   rowYPositions: Map<string, number>
   totalHeight: number
   children?: React.ReactNode
+  /** Task being moved via the floating drag clone — rendered as placeholder */
+  movingTaskId?: string | null
+  /** Called when user starts a move drag on a task bar */
+  onMoveStart?: (taskId: string, e: React.PointerEvent, barEl: HTMLDivElement) => void
 }
 
 export function ChartArea({
   tasks, rows, viewState, selectedTaskId, onSelectTask,
   totalWidth, rowYPositions, totalHeight, children,
+  movingTaskId, onMoveStart,
 }: ChartAreaProps) {
   const addTask = useGanttStore((s) => s.addTask)
   const theme = useTheme()
@@ -171,6 +176,8 @@ export function ChartArea({
                 task={task} subLane={subLane} viewState={viewState}
                 isSelected={task.id === selectedTaskId}
                 onSelect={onSelectTask}
+                isMovePlaceholder={task.id === movingTaskId}
+                onMoveStart={onMoveStart}
               />
             ))}
             {isCreatingInRow && ghostStart && ghostEnd && (

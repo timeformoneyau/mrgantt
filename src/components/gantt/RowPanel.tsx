@@ -39,6 +39,8 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
     setEditing(false)
   }
 
+  const isSystem = row.isSystem === true
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -48,7 +50,10 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
         display: 'flex',
         alignItems: 'flex-start',
         padding: '11px 14px 0 0',
-        background: theme.surface,
+        // System rows get a very subtle tinted background
+        background: isSystem
+          ? theme.isDark ? 'rgba(85,243,102,0.04)' : 'rgba(85,243,102,0.04)'
+          : theme.surface,
         borderRight: `1px solid ${theme.border}`,
         borderBottom: `1px solid ${theme.borderSubtle}`,
         width: LEFT_PANEL_WIDTH,
@@ -63,13 +68,15 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
         height: rowHeight,
         position: 'absolute',
         left: 0, top: 0,
-        background: hovered ? '#55F366' : 'transparent',
+        background: isSystem
+          ? 'rgba(85,243,102,0.35)'  // always slightly visible for system row
+          : hovered ? '#55F366' : 'transparent',
         transition: 'background 0.15s',
         borderRadius: '0 2px 2px 0',
       }} />
 
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 14 }}>
-        {editing ? (
+        {editing && !isSystem ? (
           <input
             autoFocus
             value={name}
@@ -89,13 +96,14 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
           />
         ) : (
           <span
-            onDoubleClick={() => { setEditing(true); setName(row.name) }}
-            title="Double-click to rename"
+            onDoubleClick={() => { if (!isSystem) { setEditing(true); setName(row.name) } }}
+            title={isSystem ? 'Staging lane — drag tasks here to unassign' : 'Double-click to rename'}
             style={{
-              fontSize: 12, fontWeight: 600,
+              fontSize: 12, fontWeight: isSystem ? 500 : 600,
               fontFamily: "'Poppins', Arial, sans-serif",
-              color: theme.text,
-              cursor: 'text',
+              fontStyle: isSystem ? 'italic' : 'normal',
+              color: isSystem ? theme.textMuted : theme.text,
+              cursor: isSystem ? 'default' : 'text',
               display: 'block',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}
@@ -105,8 +113,8 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
         )}
       </div>
 
-      {/* Actions on hover */}
-      {hovered && !editing && (
+      {/* Actions on hover — system rows have no controls */}
+      {hovered && !editing && !isSystem && (
         <div style={{ display: 'flex', gap: 1, paddingLeft: 6, flexShrink: 0 }}>
           <IconBtn onClick={() => moveRowUp(row.id)} title="Move up" theme={theme}>↑</IconBtn>
           <IconBtn onClick={() => moveRowDown(row.id)} title="Move down" theme={theme}>↓</IconBtn>
