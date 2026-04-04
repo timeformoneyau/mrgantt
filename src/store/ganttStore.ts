@@ -426,7 +426,7 @@ export const useGanttStore = create<GanttStore>()(
       },
     }),
     {
-      name: 'mrgant-v3',
+      name: 'mrgant-v4',
       // Only persist data + view — not UI state or history stacks
       partialize: (state) => ({
         tasks: state.tasks,
