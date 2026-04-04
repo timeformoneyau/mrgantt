@@ -77,14 +77,6 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
       }} />
 
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 14 }}>
-        {isSystem && (
-          <span style={{
-            position: 'absolute', top: 4, left: 14,
-            fontSize: 8, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.1em', color: 'rgba(85,243,102,0.5)',
-            fontFamily: "'Poppins'",
-          }}>Staging</span>
-        )}
         {editing && !isSystem ? (
           <input
             autoFocus
@@ -98,7 +90,7 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
             style={{
               width: '100%', border: '1px solid #55F366', borderRadius: 5,
               padding: '2px 7px', fontSize: 12, fontWeight: 600,
-              fontFamily: "'Poppins', Arial, sans-serif",
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
               outline: 'none', background: theme.inputBg,
               boxSizing: 'border-box', color: theme.text,
             }}
@@ -108,8 +100,8 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
             onDoubleClick={() => { if (!isSystem) { setEditing(true); setName(row.name) } }}
             title={isSystem ? 'Staging lane — drag tasks here to unassign' : 'Double-click to rename'}
             style={{
-              fontSize: 12, fontWeight: isSystem ? 500 : 600,
-              fontFamily: "'Poppins', Arial, sans-serif",
+              fontSize: 13, fontWeight: isSystem ? 500 : 600,
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
               fontStyle: isSystem ? 'italic' : 'normal',
               color: isSystem ? theme.textMuted : theme.text,
               cursor: isSystem ? 'default' : 'text',
@@ -150,7 +142,7 @@ function IconBtn({ onClick, title, children, danger = false, theme }: {
         background: 'transparent', cursor: 'pointer',
         fontSize: 12, color: danger ? theme.text : theme.textMuted,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 0, lineHeight: 1, fontFamily: "'Poppins', Arial, sans-serif",
+        padding: 0, lineHeight: 1, fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       }}
       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = theme.borderSubtle }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}

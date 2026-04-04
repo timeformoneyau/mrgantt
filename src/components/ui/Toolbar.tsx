@@ -28,7 +28,7 @@ const T = {
 export function Toolbar() {
   const {
     viewState, setViewState, addRow, addDivider,
-    undo, redo, past, future, darkMode, toggleDarkMode, resetToDemo,
+    undo, redo, past, future, darkMode, toggleDarkMode, clearAll,
   } = useGanttStore()
   const theme = useTheme()
 
@@ -37,7 +37,7 @@ export function Toolbar() {
     width: '100%', padding: '7px 9px',
     border: `1px solid ${theme.inputBorder}`, borderRadius: 6,
     fontSize: 13, outline: 'none', boxSizing: 'border-box',
-    fontFamily: "'Poppins', Arial, sans-serif",
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     color: theme.text, background: theme.inputBg,
   }
   const primaryBtnStyle: React.CSSProperties = {
@@ -45,7 +45,7 @@ export function Toolbar() {
     background: '#55F366', color: '#000404',
     border: 'none', borderRadius: 7,
     fontSize: 13, fontWeight: 700,
-    fontFamily: "'Poppins', Arial, sans-serif",
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     cursor: 'pointer',
   }
   const ghostBtnStyle: React.CSSProperties = {
@@ -53,7 +53,7 @@ export function Toolbar() {
     background: 'transparent', color: theme.text,
     border: `1px solid ${theme.border}`, borderRadius: 7,
     fontSize: 13, fontWeight: 500,
-    fontFamily: "'Poppins', Arial, sans-serif",
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     cursor: 'pointer',
   }
 
@@ -67,6 +67,7 @@ export function Toolbar() {
   })
   const [customStart, setCustomStart] = useState(viewState.startDate)
   const [customEnd, setCustomEnd] = useState(viewState.endDate)
+  const [customRange, setCustomRange] = useState<{ start: string; end: string }>({ start: viewState.startDate, end: viewState.endDate })
 
   const canUndo = past.length > 0
   const canRedo = future.length > 0
@@ -81,6 +82,7 @@ export function Toolbar() {
 
   function handleCustomRange() {
     if (customStart >= customEnd) return
+    setCustomRange({ start: customStart, end: customEnd })
     setViewState({
       startDate: customStart,
       endDate: customEnd,
@@ -90,6 +92,26 @@ export function Toolbar() {
       )),
     })
     setShowCustomRange(false)
+  }
+
+  function handleCustomButtonClick() {
+    if (showCustomRange) {
+      // dropdown is open — just close it
+      setShowCustomRange(false)
+    } else if (viewState.zoom === 'custom') {
+      // already in custom mode — toggle dropdown open/closed
+      setShowCustomRange(true)
+    } else {
+      // not in custom mode — immediately apply last known customRange
+      setViewState({
+        startDate: customRange.start,
+        endDate: customRange.end,
+        zoom: 'custom',
+        dayWidth: Math.max(4, Math.min(30,
+          1800 / Math.max(1, (parseDate(customRange.end).getTime() - parseDate(customRange.start).getTime()) / 86400000)
+        )),
+      })
+    }
   }
 
   function handleAddDivider() {
@@ -151,11 +173,11 @@ export function Toolbar() {
                 borderRadius: 6,
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: 12,
-                fontFamily: "'Poppins', Arial, sans-serif",
+                fontSize: 13,
+                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                 fontWeight: 600,
                 background: active ? T.green : 'transparent',
-                color: active ? T.black : T.midGray,
+                color: active ? T.black : 'rgba(255,255,255,0.75)',
                 transition: 'background 0.1s, color 0.1s',
               }}
               onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = T.hover }}
@@ -169,24 +191,24 @@ export function Toolbar() {
         {/* Custom range */}
         <div style={{ position: 'relative' }}>
           <button
-            onClick={() => setShowCustomRange((v) => !v)}
+            onClick={handleCustomButtonClick}
             style={{
               padding: '5px 13px',
               borderRadius: 6,
               border: 'none',
               cursor: 'pointer',
-              fontSize: 12,
-              fontFamily: "'Poppins', Arial, sans-serif",
+              fontSize: 13,
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
               fontWeight: 600,
               background: viewState.zoom === 'custom' ? T.green : 'transparent',
-              color: viewState.zoom === 'custom' ? T.black : T.midGray,
+              color: viewState.zoom === 'custom' ? T.black : 'rgba(255,255,255,0.75)',
             }}
           >
             Custom
           </button>
           {showCustomRange && (
             <Dropdown onClose={() => setShowCustomRange(false)} theme={theme}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: theme.text, marginBottom: 14, fontFamily: "'Poppins', Arial" }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: theme.text, marginBottom: 14, fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
                 Custom range
               </div>
               <DropdownField label="Start date" theme={theme}>
@@ -205,7 +227,7 @@ export function Toolbar() {
       </div>
 
       {/* Date range */}
-      <span style={{ fontSize: 11, color: T.midGray, fontFamily: "'Poppins', Arial", fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+      <span style={{ fontSize: 11, color: T.midGray, fontFamily: "'Inter', system-ui, -apple-system, sans-serif", fontWeight: 500, display: 'flex', alignItems: 'center' }}>
         {format(parseDate(viewState.startDate), 'MMM d')} – {format(parseDate(viewState.endDate), 'MMM d, yyyy')}
       </span>
 
@@ -220,17 +242,17 @@ export function Toolbar() {
 
       {/* Add lane */}
       <ToolbarBtn onClick={() => addRow()} title="Add lane">
-        <PlusIcon /> <span>Add lane</span>
+        <PlusIcon /> <span>Add Lane</span>
       </ToolbarBtn>
 
       {/* Add divider marker */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
         <ToolbarBtn onClick={() => setShowDividerModal((v) => !v)} title="Add marker">
-          <MarkerIcon /> <span>Marker</span>
+          <MarkerIcon /> <span>Add Marker</span>
         </ToolbarBtn>
         {showDividerModal && (
           <Dropdown onClose={() => setShowDividerModal(false)} right theme={theme}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: theme.text, marginBottom: 14, fontFamily: "'Poppins', Arial" }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: theme.text, marginBottom: 14, fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
               Add divider marker
             </div>
             <DropdownField label="Date" theme={theme}>
@@ -286,7 +308,7 @@ export function Toolbar() {
         <ZoomOutIcon />
       </ToolbarBtn>
       <span style={{
-        fontSize: 10, color: T.midGray, fontFamily: "'Poppins', Arial, sans-serif",
+        fontSize: 10, color: T.midGray, fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         fontWeight: 600, letterSpacing: '0.04em', minWidth: 30, textAlign: 'center',
         alignSelf: 'center',
       }}>
@@ -301,16 +323,16 @@ export function Toolbar() {
 
       <ToolbarDivider />
 
-      {/* Reset */}
+      {/* Clear */}
       <ToolbarBtn
         onClick={() => {
-          if (confirm('Reset to demo data? All current work will be lost.')) {
-            resetToDemo()
+          if (confirm('Clear all tasks and lanes? This cannot be undone.')) {
+            clearAll()
           }
         }}
-        title="Reset to demo data"
+        title="Clear all tasks and lanes"
       >
-        <ResetIcon />
+        <ResetIcon /> <span>Clear</span>
       </ToolbarBtn>
 
       <ToolbarDivider />
@@ -320,8 +342,9 @@ export function Toolbar() {
         onClick={toggleDarkMode}
         title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 32, height: 32,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+          padding: '0 8px',
+          height: 32,
           border: darkMode ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.12)',
           borderRadius: 7,
           background: darkMode ? 'rgba(255,255,255,0.08)' : 'transparent',
@@ -335,6 +358,10 @@ export function Toolbar() {
         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = darkMode ? 'rgba(255,255,255,0.08)' : 'transparent' }}
       >
         {darkMode ? <SunIcon /> : <MoonIcon />}
+        {darkMode
+          ? <span style={{ fontSize: 11, color: T.midGray }}>Light</span>
+          : <span style={{ fontSize: 11, color: T.midGray }}>Dark</span>
+        }
       </button>
     </header>
   )
@@ -356,12 +383,12 @@ function ToolbarBtn({ onClick, disabled, title, children }: {
       disabled={disabled}
       title={title}
       style={{
-        display: 'flex', alignItems: 'center', gap: 5,
-        padding: '5px 10px',
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '5px 12px',
         border: 'none', borderRadius: 6,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        fontSize: 12,
-        fontFamily: "'Poppins', Arial, sans-serif",
+        fontSize: 13,
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         fontWeight: 500,
         color: disabled ? 'rgba(255,255,255,0.2)' : T.white,
         background: 'transparent',
@@ -390,7 +417,7 @@ function Dropdown({ children, onClose, right, theme }: { children: React.ReactNo
         : '0 8px 32px rgba(0,4,4,0.12)',
       zIndex: 100,
       minWidth: 250,
-      fontFamily: "'Poppins', Arial, sans-serif",
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     }}>
       {children}
     </div>
@@ -419,10 +446,10 @@ function MarkerIcon() {
   return <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="2 1.5"><line x1="6.5" y1="1" x2="6.5" y2="12" /></svg>
 }
 function UndoIcon() {
-  return <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6.5a4.5 4.5 0 1 0 1-2.7" /><polyline points="2,2 2,6.5 6.5,6.5" /></svg>
+  return <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 7.5a5 5 0 1 0 1-3" /><polyline points="2.5,2.5 2.5,7.5 7.5,7.5" /></svg>
 }
 function RedoIcon() {
-  return <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 6.5a4.5 4.5 0 1 1-1-2.7" /><polyline points="11,2 11,6.5 6.5,6.5" /></svg>
+  return <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12.5 7.5a5 5 0 1 1-1-3" /><polyline points="12.5,2.5 12.5,7.5 7.5,7.5" /></svg>
 }
 function MoonIcon() {
   return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M12 9.3A6 6 0 0 1 4.7 2a6 6 0 1 0 7.3 7.3z" /></svg>

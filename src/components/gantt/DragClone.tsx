@@ -69,7 +69,7 @@ export function DragClone({ task, width, initialX, initialY, cloneRef, dateLabel
             background: '#000404',
             color: '#FBF9F3',
             fontSize: 10, fontWeight: 600,
-            fontFamily: "'Poppins', Arial, sans-serif",
+            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
             padding: '2px 8px',
             borderRadius: 4,
             whiteSpace: 'nowrap',
@@ -96,7 +96,7 @@ export function DragClone({ task, width, initialX, initialY, cloneRef, dateLabel
       }}>
         <span style={{
           fontSize: 12, fontWeight: 600,
-          fontFamily: "'Poppins', Arial, sans-serif",
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           color: textColor,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           flex: 1,
@@ -111,7 +111,7 @@ export function DragClone({ task, width, initialX, initialY, cloneRef, dateLabel
             background: 'rgba(0,0,0,0.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 8, fontWeight: 700, letterSpacing: '-0.5px',
-            fontFamily: "'Poppins', Arial, sans-serif",
+            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
             color: textColor, flexShrink: 0,
           }}>
             {initials}

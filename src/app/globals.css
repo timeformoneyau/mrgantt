@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;700;900&family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 html,
 body,
@@ -10,7 +10,7 @@ body,
 body {
   overflow: hidden;
   background: #FBF9F3;
-  font-family: 'Poppins', 'Arial', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: #000404;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

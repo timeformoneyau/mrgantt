@@ -59,7 +59,7 @@ export function GanttChart() {
     tasks, rows, dividers, dependencies,
     viewState, selectedTaskId, sidePanelOpen,
     selectTask, setSidePanelOpen,
-    updateTask,
+    updateTask, deleteTask,
     undo, redo,
   } = useGanttStore()
   const theme = useTheme()
@@ -105,6 +105,10 @@ export function GanttChart() {
       ) {
         e.preventDefault()
         redo()
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedTaskId) {
+        e.preventDefault()
+        deleteTask(selectedTaskId)
+        selectTask(null)
       } else if (e.key === 'Escape') {
         if (moveStateRef.current) {
           // Cancel in-flight drag
@@ -118,7 +122,7 @@ export function GanttChart() {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [undo, redo, selectTask])
+  }, [undo, redo, selectTask, deleteTask, selectedTaskId])
 
   // Jump to today
   useEffect(() => {
@@ -326,8 +330,8 @@ export function GanttChart() {
             <rect x="16" y="27" width="28" height="8" rx="4" fill="#55F366" opacity="0.4" />
           </svg>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 700, fontSize: 16, color: theme.text, marginBottom: 4, fontFamily: "'Poppins', Arial, sans-serif" }}>No lanes yet</div>
-            <div style={{ fontSize: 13, color: theme.textMuted, fontFamily: "'Poppins', Arial, sans-serif" }}>Click <strong style={{ color: theme.text }}>Add Lane</strong> in the toolbar to get started.</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: theme.text, marginBottom: 4, fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>No lanes yet</div>
+            <div style={{ fontSize: 13, color: theme.textMuted, fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>Click <strong style={{ color: theme.text }}>Add Lane</strong> in the toolbar to get started.</div>
           </div>
         </div>
       </div>

@@ -323,14 +323,14 @@ export function TaskBar({
                 outline: '1.5px solid rgba(85,243,102,0.7)',
                 outlineOffset: 2, borderRadius: 3,
                 color: textColor, fontSize: 12, fontWeight: 600,
-                fontFamily: "'Poppins', Arial, sans-serif",
+                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                 width: '100%', padding: '0 2px',
               }}
             />
           ) : (
             <span style={{
               fontSize: 12, fontWeight: 600,
-              fontFamily: "'Poppins', Arial, sans-serif",
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
               color: textColor,
               whiteSpace: 'nowrap', overflow: 'hidden',
               textOverflow: width > 60 ? 'ellipsis' : 'clip',
@@ -350,7 +350,7 @@ export function TaskBar({
             background: 'rgba(0,0,0,0.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 8, fontWeight: 700, letterSpacing: '-0.5px',
-            fontFamily: "'Poppins', Arial, sans-serif",
+            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
             color: textColor, flexShrink: 0,
             pointerEvents: 'none', zIndex: 3,
           }}>
@@ -374,7 +374,7 @@ export function TaskBar({
             left: '50%', transform: 'translateX(-50%)',
             background: '#000404', color: '#FBF9F3',
             fontSize: 11, fontWeight: 500,
-            fontFamily: "'Poppins', Arial, sans-serif",
+            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
             padding: '3px 8px', borderRadius: 5,
             whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 50,
           }}>
@@ -431,7 +431,7 @@ function TaskTooltip({ task, x, y, barBottom }: { task: Task; x: number; y: numb
       borderRadius: 8,
       padding: '10px 12px',
       fontSize: 11,
-      fontFamily: "'Poppins', Arial, sans-serif",
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       zIndex: 99998,
       pointerEvents: 'none',
       boxShadow: '0 4px 20px rgba(0,0,0,0.35)',

@@ -1,0 +1,278 @@
+Tiimely
+Design System
+A prompt-ready reference for LLM-assisted content creation
+Sources: Brand Confluence (BRAN, MAR, TH spaces)  ·  Brand Guidelines page (updated Jan 2026)
+design@tiimely.com
+1. Colour System
+Tiimely uses a carefully defined palette shared across corporate and retail (Tiimely Home) brands. Colours are applied consistently to signal brand hierarchy and context.
+1.1 Core Palette
+Used across all Tiimely corporate and Tiimely Home contexts:
+Tiimely Black
+#000404
+Tiimely Green
+#55F366
+Teal (corporate)
+#1FE7DC
+Eggshell
+#F5F3EC
+White
+#FFFFFF
+Mid Gray
+#B0AEA5
+COLOUR USAGE NOTES
+Tiimely Black (#000404) — primary text and hero/dark slide backgrounds
+Tiimely Green (#55F366) — primary brand accent, CTAs, accent bars. Use sparingly.
+Teal (#1FE7DC) — secondary accent, primarily corporate Tiimely contexts
+Eggshell (#FBF9F3) — warm off-white, preferred content slide background over pure white
+Gradients — dark: #000404 → #357762 · green: #55F366 → #1FE7DC. Text highlights and hero moments only. Never as a full headline treatment.
+1.2 Extended Palette — Tiimely Home Retail
+Tiimely Home (retail brand) cycles through these three accents for shapes, chips and highlights:
+Minty Fresh
+#75FAAB
+Sky Blue
+#81ECF5
+Sunshine
+#FCFE7F
+Minty Fresh 20%
+#E5FEEE
+Sky Blue 20%
+#E7FBFE
+Sunshine 20%
+#FEFFE7
+Forest Green
+#084A3C
+Light backgrounds: use full-saturation accents (Minty Fresh, Sky Blue, Sunshine).
+Dark backgrounds: use 20% tint variants (Minty Fresh 20%, Sky Blue 20%, Sunshine 20%).
+Forest Green (#084A3C): hero/section backgrounds for Tiimely Home retail slides.
+1.3 Two-Brand Quick Reference
+Tiimely (Corporate)
+Primary: #000404 black backgrounds
+Accent: #55F366 green + #1FE7DC teal
+Headings: Darker Grotesque 900
+Feel: Refined, tech-forward, confident
+Tiimely Home (Retail)
+Primary: #084A3C forest green hero
+Accents: Minty Fresh / Sky Blue / Sunshine
+Content: Eggshell / White backgrounds
+Feel: Warm, lifestyle-forward, relatable
+2. Typography
+Tiimely's type system pairs an expressive headline face with a clean, versatile body font. All type is set in sentence case — never Title Case or ALL CAPS — except for label/eyebrow treatments.
+Role
+Font / Weight
+Notes
+H1–H3 Hero
+Darker Grotesque Black 900
+Headlines, section openers. Tight leading (1.1–1.2). Sentence case. No periods.
+H4–H6
+Poppins Bold 700
+Sub-headings. Sentence case.
+Body
+Poppins Regular 400
+All body copy. Line-height 1.6.
+Highlight in copy
+Poppins SemiBold 600
+Inline emphasis only — not whole sentences.
+Buttons
+Poppins Medium 500
+Sentence case, no periods.
+Labels / Eyebrows
+Poppins Medium 500
+Uppercase, letter-spaced. Used above headings.
+Fallbacks
+Georgia / Arial
+Georgia replaces Darker Grotesque. Arial replaces Poppins.
+2.1 Usage Rules
+Sentence case always — headings, buttons, labels
+No periods at the end of headings or button labels
+No highlighted italic text (brand rule)
+No ALL CAPS for emphasis — use SemiBold weight instead
+Maximum one exclamation mark per document or deck
+Fallbacks: Georgia for Darker Grotesque, Arial for Poppins, Epilogue also accepted for headings
+2.2 Font Sizing Quick Reference
+Context
+Approx. pt size
+Notes
+PowerPoint hero headline
+40–60pt
+Darker Grotesque / Georgia, 900 weight
+PowerPoint section heading
+28–36pt
+Darker Grotesque, tight leading
+PowerPoint body
+18–22pt
+Poppins, 1.4–1.6 leading
+PowerPoint caption/label
+12–14pt
+Poppins, uppercase, tracked
+Word doc body
+11–12pt
+Poppins / Arial, 1.6 leading
+Word doc H1
+18–22pt
+Poppins Bold
+Email body
+14–16pt
+Arial (web-safe fallback)
+3. Slide Layout Archetypes
+Tiimely presentations use four standard slide backgrounds. All slides are 16:9 widescreen format.
+Slide Type
+Background
+Usage Notes
+Sample
+Dark Hero Slide
+#000404 black
+White Poppins body. Green/teal gradient accent bar at slide bottom. Used for title slides, section openers.
+Sample
+Eggshell Content Slide
+#FBF9F3 eggshell
+Dark text. Green/teal accent shapes or 'ii' badge. Used for most content slides.
+Sample
+White Content Slide
+#FFFFFF white
+Dark text. Minty Fresh (#75FAAB) accent bars or shapes. Clean, minimal.
+Sample
+Green Statement Slide
+#55F366 green
+Black text on brand green. Reserved for emphasis, key stats, major announcements. Use sparingly.
+3.1 Layout & Spacing Principles
+Generous whitespace — 'less cluttered, simplified' is a core design direction
+Align content to a clear grid — don't fill every corner
+Breathing room signals confidence — a sparse slide is intentional
+Accent bars: bold horizontal bar at bottom of dark slides using gradient #55F366 → #1FE7DC
+Corner badge: circle or pill in #55F366 green with 'ii' or other mark — top-right position
+Content slides: left-align text blocks, right-side imagery or data visualisation
+3.2 Shapes & Graphic Elements
+Use
+Flat geometric fills — no drop shadows
+Rounded rectangles (6–12pt corner radius)
+Bold accent bars at slide bottom or left edge
+Circle / pill badges in brand green (#55F366) or teal (#1FE7DC)
+Simple flat icon style — supports a point, never leads
+Data visualisations with brand colour fills
+Avoid
+Drop shadows or depth effects on shapes
+Heavy gradients across large shape areas
+Old house/sun icon
+Old pizza-box or legacy illustrations
+Highlighted italic text anywhere
+Overly complex or decorative illustrations
+4. Imagery Guidelines
+Photography and imagery reinforce the brand's warm-but-tech feel. All images should feel real and relatable, not generic or overly corporate.
+Use
+Realistic, relatable lifestyle scenarios — people in homes, family moments
+Warm-neutral colour tone, leaning toward eggshell warmth
+Include green tones — in the original shot or colour-corrected in post
+Images that show the idea being communicated (not decorative filler)
+Natural light, unposed-feeling compositions
+Avoid
+Generic stock imagery — people in suits shaking hands
+Obviously AI-generated faces (uncanny valley, too-warm tones)
+Overly warm or orange tones without green counterbalance
+Photos unrelated to the slide narrative
+Old brand illustrations (pizza box, house/sun icon)
+Colour correction tip: if a stock image is too warm and lacks green, colour-grade it in Photoshop to add a slight cool-green shift. Reference the Tiimely Home brand book for before/after examples.
+5. Tone of Voice
+Personable Professional
+Our tone of voice closely follows our values. We speak like a switched-on mortgage expert who explains home loans in plain language and never hides the fine print. We blend a tech-first approach with excellent human support.
+5.1 Four Core Principles
+Tech-first, human-backed  — Emphasise our technology advantage while reassuring that human support is always available.
+Confident, not salesy  — Don't over-hype. Back claims up with specific figures.
+Relatable, not quirky  — Not a stuffy corporate, not a startup trying to be edgy. Professionals providing a personable experience.
+Clear and specific  — Short sentences, plain language, active voice. Always with substance — never write to fill space.
+5.2 Writing Rules
+Do
+Active, conversational sentences — "You can do the whole application on your phone"
+Use contractions — "you're" not "you are"
+Specific numbers — "approved in as little as 58 minutes" not "quickly"
+Front-load benefits, then explain features
+Sentence case headlines, no periods
+Max one exclamation mark per document
+Clear, actionable CTAs — "Buy", "Refinance", "Talk to a mortgage broker"
+Don't
+Heavy jargon without a quick explanation
+Over-claiming speed, abilities or rates without backing data
+Hiding fees or conditions — list them plainly
+"brokers" — always say "mortgage brokers"
+Highlighted italic text
+ALL CAPS for emphasis — use bold weight instead
+Generic filler phrases — "world-class", "seamless", "cutting-edge" without evidence
+5.3 Audience Tone Calibration
+Tone can flex slightly depending on audience, while staying within the personable professional range:
+Audience
+Tone
+Example shift
+First home buyers
+Warmer, more reassuring, relatable
+"We know it can feel overwhelming — here's exactly what happens next."
+Multi-property investors
+More direct, data-forward
+"Our assessment engine processes your portfolio in minutes, not days."
+Mortgage brokers
+Professional, peer-to-peer
+"Your clients get a full decision, not just a pre-approval, in hours."
+B2B / Enterprise (Xapii)
+Technical, credibility-led
+"Configurable API-led decisioning with full audit trail."
+6. Brand Identifiers
+6.1 The Double 'ii'
+The double 'ii' in Tiimely is a core brand signal — not just a spelling quirk. It represents the "human in the loop" signature process and signals that Tiimely's technology and teams are both intelligent and intuitive.
+In design, the 'ii' can appear as a decorative badge, corner mark, or watermark element — typically in a circle or pill shape using brand green (#55F366) with black text on dark slides, or black (#000404) with green text on light slides.
+6.2 Sub-Brands
+Brand
+Description
+Key Design Note
+Tiimely
+Core corporate / technology company
+Dark-first, #000404 bg, green accent
+Tiimely Home
+Retail home loan destination ("the department store")
+Forest green hero, eggshell content, lifestyle imagery
+Tiimely Own
+Tiimely's 'house brand' home loan product
+Shares Tiimely Home palette; the in-house product
+Xapii
+Platform technology brand — 'Built by Tiimely'
+Own logo. Always paired with 'Built by Tiimely' tag
+7. LLM Prompt Cheatsheet
+Copy the block below into any LLM prompt to instruct it to produce Tiimely-branded output. Adjust the final instruction to describe your specific deliverable.
+PROMPT BLOCK — copy from here:
+Use the Tiimely brand design system throughout this output.
+COLOURS:
+Primary: #000404 (Tiimely Black), #55F366 (Tiimely Green), #1FE7DC (Teal)
+Backgrounds: #000404 dark hero | #FBF9F3 eggshell content | #FFFFFF clean white | #55F366 green emphasis
+Retail accents: #75FAAB Minty Fresh | #81ECF5 Sky Blue | #FCFE7F Sunshine
+On dark backgrounds use 20% tints: #E5FEEE | #E7FBFE | #FEFFE7
+Gradients (text highlights only): #000404 → #357762 (dark) or #55F366 → #1FE7DC (green)
+TYPOGRAPHY:
+Headlines (H1-H3): Darker Grotesque Black/900 (fallback: Georgia). Tight leading 1.1-1.2.
+Sub-headings (H4-H6): Poppins Bold/700
+Body: Poppins Regular/400, line-height 1.6
+Highlight: Poppins SemiBold/600
+Labels/eyebrows: Poppins Medium/500, UPPERCASE, letter-spaced
+ALWAYS sentence case. No periods on headings. Never ALL CAPS for emphasis.
+LAYOUT:
+Generous whitespace. Flat geometric shapes. No drop shadows.
+Rounded corners (6-12pt). Accent bars using gradient at slide bottom.
+Circle/pill badges with 'ii' mark in brand green.
+IMAGERY:
+Realistic lifestyle photography with warm-neutral, slightly green colour grading.
+No generic stock. No AI-generated faces. Include green tones.
+TONE OF VOICE: Personable Professional.
+Human, transparent, jargon-free. Tech-first, human-backed.
+Confident (not salesy). Specific numbers. Active voice. Contractions OK.
+Max one exclamation mark. Say 'mortgage brokers' not 'brokers'.
+Now please [DESCRIBE YOUR DELIVERABLE HERE].
+8. References & Contacts
+Source Documents
+Welcome to the Brand Space (BRAN space) — Confluence, v58: tiimely.atlassian.net/wiki/spaces/BRAN/overview
+Welcome to the Brand Space (MAR space) — Confluence, v87: tiimely.atlassian.net/wiki/spaces/MAR/pages/14346551431
+Brand Guidelines — Tiimely Home (TH space) — Confluence, v76, updated Jan 2026: tiimely.atlassian.net/wiki/spaces/TH/pages/15268184069/Brand+Guidelines
+Tiimely Home Brand Book (PDF) — Tiimely home-brandguideline.TM_March 2025.pdf (attached to brand spaces)
+Brand Team
+Tania De Masi — Head of Brand & Content (overall brand strategy and creative direction)
+Amy Le — Senior Designer (assets for Tiimely, Tiimely Home, corporate)
+Yenty Jap — Senior Designer (assets for Tiimely, Tiimely Home, corporate)
+Alex Plisko — Customer and Owned Content Specialist
+For design requests, briefs, or questions: design@tiimely.com
+For Slack: @Amy Le  @Yenty Jap  @Alex Plisko  @Tania De Masi
+Tiimely Design System — Internal Reference  ·  design@tiimely.com

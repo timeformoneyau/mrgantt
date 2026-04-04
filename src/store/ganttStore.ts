@@ -14,7 +14,7 @@ function makeInitialData() {
   const fmt = (d: Date) => formatDate(d)
 
   const rows: Row[] = [
-    { id: 'row-unassigned', name: 'Unassigned', order: 9999, isSystem: true },
+    { id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true },
     { id: 'row-1', name: 'Product', order: 0 },
     { id: 'row-2', name: 'Design', order: 1 },
     { id: 'row-3', name: 'Engineering', order: 2 },
@@ -163,6 +163,9 @@ interface GanttStore {
 
   // Reset
   resetToDemo: () => void
+
+  // Clear
+  clearAll: () => void
 }
 
 // ---------------------------------------------------------------------------
@@ -424,9 +427,22 @@ export const useGanttStore = create<GanttStore>()(
           _colorIndex: freshData.tasks.length,
         })
       },
+
+      clearAll: () => {
+        set({
+          tasks: [],
+          rows: [{ id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true }],
+          dividers: [],
+          dependencies: [],
+          past: [],
+          future: [],
+          selectedTaskId: null,
+          sidePanelOpen: false,
+        })
+      },
     }),
     {
-      name: 'mrgant-v4',
+      name: 'mrgant-v5',
       // Only persist data + view — not UI state or history stacks
       partialize: (state) => ({
         tasks: state.tasks,

@@ -52,7 +52,7 @@ export function DividerLayer({ dividers, viewState, totalHeight }: DividerLayerP
                   borderRadius: 20,
                   whiteSpace: 'nowrap',
                   letterSpacing: '0.04em',
-                  fontFamily: "'Poppins', Arial, sans-serif",
+                  fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                   pointerEvents: 'all',
                   cursor: 'pointer',
                   opacity: 0.95,

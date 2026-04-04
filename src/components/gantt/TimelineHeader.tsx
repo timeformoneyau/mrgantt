@@ -35,10 +35,10 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
         padding: '0 16px 7px',
       }}>
         <span style={{
-          fontSize: 9, fontWeight: 700,
+          fontSize: 10, fontWeight: 700,
           letterSpacing: '0.1em', color: theme.textMuted,
           textTransform: 'uppercase',
-          fontFamily: "'Poppins', Arial, sans-serif",
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         }}>
           LANES
         </span>
@@ -62,9 +62,9 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
               overflow: 'hidden',
             }}>
               <span style={{
-                fontSize: m.width > 100 ? 11 : 9,
+                fontSize: m.width > 100 ? 13 : 11,
                 fontWeight: 700,
-                fontFamily: "'Poppins', Arial, sans-serif",
+                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                 color: m.isQuarterStart ? theme.text : theme.textMuted,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
@@ -96,9 +96,9 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
             }}>
               {w.width > 38 && (
                 <span style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 500,
-                  fontFamily: "'Poppins', Arial, sans-serif",
+                  fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                   color: theme.textMuted,
                   whiteSpace: 'nowrap',
                 }}>
