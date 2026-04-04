@@ -6,6 +6,7 @@ import { Task } from '@/types'
 import { useGanttStore } from '@/store/ganttStore'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { parseDate } from '@/lib/timeline'
+import { useTheme } from '@/lib/theme'
 
 interface TaskSidePanelProps {
   taskId: string
@@ -14,6 +15,21 @@ interface TaskSidePanelProps {
 
 export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
   const { tasks, rows, dependencies, updateTask, deleteTask, addDependency, deleteDependency } = useGanttStore()
+  const theme = useTheme()
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '7px 9px',
+    border: `1px solid ${theme.inputBorder}`, borderRadius: 6,
+    fontSize: 12, outline: 'none', boxSizing: 'border-box',
+    fontFamily: "'Poppins', Arial, sans-serif",
+    color: theme.text, background: theme.inputBg,
+  }
+
+  const fieldLabelStyle: React.CSSProperties = {
+    fontSize: 9, fontWeight: 700, color: theme.textMuted,
+    textTransform: 'uppercase', letterSpacing: '0.09em',
+    fontFamily: "'Poppins', Arial, sans-serif",
+  }
   const task = tasks.find((t) => t.id === taskId)
   const sortedRows = [...rows].sort((a, b) => a.order - b.order)
   const [form, setForm] = useState<Omit<Task, 'id'> | null>(null)
@@ -48,21 +64,21 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
   return (
     <div style={{
       width: 320, minWidth: 320, height: '100%',
-      background: '#FFFFFF',
-      borderLeft: '1px solid #E8E6DE',
+      background: theme.surface,
+      borderLeft: `1px solid ${theme.border}`,
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden', flexShrink: 0,
     }}>
       {/* Header */}
       <div style={{
         padding: '14px 18px 12px',
-        borderBottom: '1px solid #F0EEE8',
+        borderBottom: `1px solid ${theme.borderSubtle}`,
         display: 'flex', alignItems: 'center', gap: 10,
-        background: '#FAFAF7',
+        background: theme.surfaceAlt,
       }}>
         <div style={{ width: 10, height: 10, borderRadius: '50%', background: task.color, flexShrink: 0 }} />
         <span style={{
-          fontWeight: 700, fontSize: 13, color: '#000404', flex: 1,
+          fontWeight: 700, fontSize: 13, color: theme.text, flex: 1,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           fontFamily: "'Poppins', Arial, sans-serif",
         }}>
@@ -70,9 +86,9 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
         </span>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B0AEA5', fontSize: 18, lineHeight: 1, padding: 2, borderRadius: 4 }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#000404' }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#B0AEA5' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.textMuted, fontSize: 18, lineHeight: 1, padding: 2, borderRadius: 4 }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = theme.text }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = theme.textMuted }}
         >×</button>
       </div>
 
@@ -117,9 +133,9 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '3px 10px', borderRadius: 20,
-            background: '#F0EEE8', fontSize: 11, fontWeight: 600,
+            background: theme.borderSubtle, fontSize: 11, fontWeight: 600,
             fontFamily: "'Poppins', Arial, sans-serif",
-            color: '#000404',
+            color: theme.text,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: task.color, display: 'inline-block' }} />
             {durationDays} day{durationDays !== 1 ? 's' : ''} &nbsp;·&nbsp;
@@ -158,7 +174,7 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
             }}>+ Add</button>
           </div>
           {taskDeps.length === 0 && (
-            <div style={{ fontSize: 12, color: '#B0AEA5', fontStyle: 'italic', fontFamily: "'Poppins', Arial" }}>None</div>
+            <div style={{ fontSize: 12, color: theme.textMuted, fontStyle: 'italic', fontFamily: "'Poppins', Arial" }}>None</div>
           )}
           {taskDeps.map((dep) => {
             const fromTask = tasks.find((t) => t.id === dep.fromTaskId)
@@ -168,18 +184,18 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
             )
           })}
           {showDepPicker && availableForDep.length > 0 && (
-            <div style={{ marginTop: 6, border: '1px solid #E8E6DE', borderRadius: 8, overflow: 'hidden', maxHeight: 160, overflowY: 'auto' }}>
+            <div style={{ marginTop: 6, border: `1px solid ${theme.border}`, borderRadius: 8, overflow: 'hidden', maxHeight: 160, overflowY: 'auto' }}>
               {availableForDep.map((t) => (
                 <button key={t.id} onClick={() => { addDependency(t.id, taskId); setShowDepPicker(false) }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                    padding: '8px 10px', background: 'none', border: 'none',
-                    borderBottom: '1px solid #F0EEE8', cursor: 'pointer',
-                    textAlign: 'left', fontSize: 12, color: '#000404',
+                    padding: '8px 10px', background: theme.surface, border: 'none',
+                    borderBottom: `1px solid ${theme.borderSubtle}`, cursor: 'pointer',
+                    textAlign: 'left', fontSize: 12, color: theme.text,
                     fontFamily: "'Poppins', Arial, sans-serif",
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#FBF9F3' }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'none' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = theme.surfaceAlt }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = theme.surface }}
                 >
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: t.color, flexShrink: 0 }} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</span>
@@ -188,7 +204,7 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
             </div>
           )}
           {showDepPicker && availableForDep.length === 0 && (
-            <div style={{ fontSize: 12, color: '#B0AEA5', marginTop: 4, fontFamily: "'Poppins', Arial" }}>No available tasks</div>
+            <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 4, fontFamily: "'Poppins', Arial" }}>No available tasks</div>
           )}
         </div>
 
@@ -206,16 +222,16 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '12px 18px', borderTop: '1px solid #F0EEE8', display: 'flex', gap: 8 }}>
+      <div style={{ padding: '12px 18px', borderTop: `1px solid ${theme.borderSubtle}`, display: 'flex', gap: 8 }}>
         <button onClick={handleDelete}
           style={{
             padding: '7px 14px', background: 'transparent',
-            border: '1px solid #E8E6DE', color: '#000404',
+            border: `1px solid ${theme.border}`, color: theme.text,
             borderRadius: 7, fontSize: 12, fontWeight: 600,
             fontFamily: "'Poppins', Arial, sans-serif", cursor: 'pointer',
           }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#000404' }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#E8E6DE' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = theme.text }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = theme.border }}
         >
           Delete
         </button>
@@ -237,44 +253,37 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const fieldLabelStyle: React.CSSProperties = {
-  fontSize: 9, fontWeight: 700, color: '#B0AEA5',
-  textTransform: 'uppercase', letterSpacing: '0.09em',
-  fontFamily: "'Poppins', Arial, sans-serif",
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '7px 9px',
-  border: '1px solid #E8E6DE', borderRadius: 6,
-  fontSize: 12, outline: 'none', boxSizing: 'border-box',
-  fontFamily: "'Poppins', Arial, sans-serif",
-  color: '#000404', background: '#fff',
-}
-
 function PanelField({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties }) {
+  const theme = useTheme()
   return (
     <div style={{ marginBottom: 14, ...style }}>
-      <label style={{ ...fieldLabelStyle, display: 'block', marginBottom: 5 }}>{label}</label>
+      <label style={{
+        fontSize: 9, fontWeight: 700, color: theme.textMuted,
+        textTransform: 'uppercase', letterSpacing: '0.09em',
+        fontFamily: "'Poppins', Arial, sans-serif",
+        display: 'block', marginBottom: 5,
+      }}>{label}</label>
       {children}
     </div>
   )
 }
 
 function DepChip({ label, color, onRemove }: { label: string; color: string; onRemove: () => void }) {
+  const theme = useTheme()
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
-      padding: '5px 8px', background: '#FBF9F3',
-      borderRadius: 6, marginBottom: 4, border: '1px solid #F0EEE8',
+      padding: '5px 8px', background: theme.surfaceAlt,
+      borderRadius: 6, marginBottom: 4, border: `1px solid ${theme.borderSubtle}`,
     }}>
       <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      <span style={{ flex: 1, fontSize: 12, color: '#000404', fontFamily: "'Poppins', Arial, sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span style={{ flex: 1, fontSize: 12, color: theme.text, fontFamily: "'Poppins', Arial, sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {label}
       </span>
       <button onClick={onRemove}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B0AEA5', fontSize: 14, lineHeight: 1, padding: 2 }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#000404' }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#B0AEA5' }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.textMuted, fontSize: 14, lineHeight: 1, padding: 2 }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = theme.text }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = theme.textMuted }}
       >×</button>
     </div>
   )

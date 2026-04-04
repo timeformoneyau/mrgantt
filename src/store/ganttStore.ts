@@ -114,6 +114,7 @@ interface GanttStore {
   viewState: ViewState
   selectedTaskId: string | null
   sidePanelOpen: boolean
+  darkMode: boolean
 
   // Undo / redo stacks (not persisted)
   past: Snapshot[]
@@ -128,6 +129,7 @@ interface GanttStore {
   setViewState: (updates: Partial<ViewState>) => void
   selectTask: (id: string | null) => void
   setSidePanelOpen: (open: boolean) => void
+  toggleDarkMode: () => void
 
   // Tasks
   addTask: (
@@ -174,6 +176,7 @@ export const useGanttStore = create<GanttStore>()(
       viewState: getDefaultViewState('1q'),
       selectedTaskId: null,
       sidePanelOpen: false,
+      darkMode: false,
       past: [],
       future: [],
       _colorIndex: initial.tasks.length,
@@ -202,6 +205,8 @@ export const useGanttStore = create<GanttStore>()(
         set({ selectedTaskId: id, sidePanelOpen: id !== null }),
 
       setSidePanelOpen: (open) => set({ sidePanelOpen: open }),
+
+      toggleDarkMode: () => set((s) => ({ darkMode: !s.darkMode })),
 
       // ---------------------------------------------------------------
       // Tasks
@@ -398,6 +403,7 @@ export const useGanttStore = create<GanttStore>()(
         dependencies: state.dependencies,
         viewState: state.viewState,
         _colorIndex: state._colorIndex,
+        darkMode: state.darkMode,
       }),
     }
   )

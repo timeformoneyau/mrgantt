@@ -11,6 +11,7 @@ import {
 import { computeTaskLayout, getSubLaneCount } from '@/lib/taskLayout'
 import { TaskBar } from './TaskBar'
 import { useGanttStore } from '@/store/ganttStore'
+import { useTheme } from '@/lib/theme'
 
 const CLICK_CREATE_DAYS = 5
 const DRAG_THRESHOLD_PX = 6
@@ -42,6 +43,7 @@ export function ChartArea({
   totalWidth, rowYPositions, totalHeight, children,
 }: ChartAreaProps) {
   const addTask = useGanttStore((s) => s.addTask)
+  const theme = useTheme()
   const [createDrag, setCreateDrag] = useState<CreateDragState | null>(null)
 
   const { dayWidth, startDate: viewStart } = viewState
@@ -117,8 +119,8 @@ export function ChartArea({
             background: col.isQuarterBoundary
               ? 'rgba(85,243,102,0.35)'
               : col.isMonthBoundary
-              ? '#B0AEA5'
-              : '#E8E6DE',
+              ? theme.textMuted
+              : theme.border,
             opacity: col.isQuarterBoundary ? 1 : col.isMonthBoundary ? 0.5 : 1,
           }} />
         ))}
@@ -146,6 +148,8 @@ export function ChartArea({
             row={row}
             rowHeight={rowHeight}
             isCreating={isCreatingInRow ?? false}
+            rowBg={theme.surface}
+            rowBorder={theme.borderSubtle}
             onPointerDown={(e, el) => handleRowPointerDown(e, row.id, el)}
             onPointerMove={(e, el) => handleRowPointerMove(e, el)}
             onPointerUp={(e, el) => handleRowPointerUp(e, el)}
@@ -175,8 +179,8 @@ export function ChartArea({
 // ---------------------------------------------------------------------------
 // RowTrack
 // ---------------------------------------------------------------------------
-function RowTrack({ row, rowHeight, isCreating, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onClick, children }: {
-  row: Row; rowHeight: number; isCreating: boolean;
+function RowTrack({ row, rowHeight, isCreating, rowBg, rowBorder, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onClick, children }: {
+  row: Row; rowHeight: number; isCreating: boolean; rowBg: string; rowBorder: string;
   onPointerDown: (e: React.PointerEvent, el: HTMLDivElement) => void
   onPointerMove: (e: React.PointerEvent, el: HTMLDivElement) => void
   onPointerUp: (e: React.PointerEvent, el: HTMLDivElement) => void
@@ -194,9 +198,9 @@ function RowTrack({ row, rowHeight, isCreating, onPointerDown, onPointerMove, on
       onClick={onClick}
       style={{
         position: 'relative', height: rowHeight,
-        borderBottom: '1px solid #F0EEE8',
+        borderBottom: `1px solid ${rowBorder}`,
         cursor: isCreating ? 'crosshair' : 'default',
-        background: '#FBF9F3',
+        background: rowBg,
         zIndex: 5,
       }}
     >

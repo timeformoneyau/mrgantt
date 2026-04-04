@@ -5,6 +5,7 @@ import { Row, Task } from '@/types'
 import { ROW_HEIGHT, LEFT_PANEL_WIDTH } from '@/lib/timeline'
 import { getSubLaneCount } from '@/lib/taskLayout'
 import { useGanttStore } from '@/store/ganttStore'
+import { useTheme } from '@/lib/theme'
 
 interface RowPanelProps {
   rows: Row[]
@@ -26,6 +27,7 @@ export function RowPanel({ rows, tasks }: RowPanelProps) {
 
 function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
   const { updateRow, deleteRow, moveRowUp, moveRowDown } = useGanttStore()
+  const theme = useTheme()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(row.name)
   const [hovered, setHovered] = useState(false)
@@ -46,9 +48,9 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
         display: 'flex',
         alignItems: 'flex-start',
         padding: '11px 14px 0 0',
-        background: '#FFFFFF',
-        borderRight: '1px solid #E8E6DE',
-        borderBottom: '1px solid #F0EEE8',
+        background: theme.surface,
+        borderRight: `1px solid ${theme.border}`,
+        borderBottom: `1px solid ${theme.borderSubtle}`,
         width: LEFT_PANEL_WIDTH,
         minWidth: LEFT_PANEL_WIDTH,
         boxSizing: 'border-box',
@@ -81,8 +83,8 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
               width: '100%', border: '1px solid #55F366', borderRadius: 5,
               padding: '2px 7px', fontSize: 12, fontWeight: 600,
               fontFamily: "'Poppins', Arial, sans-serif",
-              outline: 'none', background: '#fff',
-              boxSizing: 'border-box', color: '#000404',
+              outline: 'none', background: theme.inputBg,
+              boxSizing: 'border-box', color: theme.text,
             }}
           />
         ) : (
@@ -92,7 +94,7 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
             style={{
               fontSize: 12, fontWeight: 600,
               fontFamily: "'Poppins', Arial, sans-serif",
-              color: '#000404',
+              color: theme.text,
               cursor: 'text',
               display: 'block',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -106,13 +108,13 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
       {/* Actions on hover */}
       {hovered && !editing && (
         <div style={{ display: 'flex', gap: 1, paddingLeft: 6, flexShrink: 0 }}>
-          <IconBtn onClick={() => moveRowUp(row.id)} title="Move up">↑</IconBtn>
-          <IconBtn onClick={() => moveRowDown(row.id)} title="Move down">↓</IconBtn>
+          <IconBtn onClick={() => moveRowUp(row.id)} title="Move up" theme={theme}>↑</IconBtn>
+          <IconBtn onClick={() => moveRowDown(row.id)} title="Move down" theme={theme}>↓</IconBtn>
           <IconBtn
             onClick={() => {
               if (confirm(`Delete lane "${row.name}"? All tasks in this lane will be removed.`)) deleteRow(row.id)
             }}
-            title="Delete lane" danger
+            title="Delete lane" danger theme={theme}
           >×</IconBtn>
         </div>
       )}
@@ -120,8 +122,8 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
   )
 }
 
-function IconBtn({ onClick, title, children, danger = false }: {
-  onClick: () => void; title: string; children: React.ReactNode; danger?: boolean
+function IconBtn({ onClick, title, children, danger = false, theme }: {
+  onClick: () => void; title: string; children: React.ReactNode; danger?: boolean; theme: ReturnType<typeof useTheme>
 }) {
   return (
     <button
@@ -129,11 +131,11 @@ function IconBtn({ onClick, title, children, danger = false }: {
       style={{
         width: 20, height: 20, border: 'none', borderRadius: 4,
         background: 'transparent', cursor: 'pointer',
-        fontSize: 12, color: danger ? '#000404' : '#B0AEA5',
+        fontSize: 12, color: danger ? theme.text : theme.textMuted,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 0, lineHeight: 1, fontFamily: "'Poppins', Arial, sans-serif",
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = danger ? 'rgba(0,4,4,0.08)' : '#F0EEE8' }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = theme.borderSubtle }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
     >
       {children}

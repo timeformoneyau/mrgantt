@@ -17,6 +17,7 @@ import {
   parseDate,
 } from '@/lib/timeline'
 import { getSubLaneCount } from '@/lib/taskLayout'
+import { useTheme } from '@/lib/theme'
 
 export function GanttChart() {
   const {
@@ -25,6 +26,7 @@ export function GanttChart() {
     selectTask, setSidePanelOpen,
     undo, redo,
   } = useGanttStore()
+  const theme = useTheme()
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -91,25 +93,16 @@ export function GanttChart() {
   // Empty state
   if (rows.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#FBF9F3' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bg }}>
         <Toolbar />
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 16,
-          }}
-        >
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <rect x="4" y="14" width="28" height="8" rx="4" fill="#E8E6DE" />
+            <rect x="4" y="14" width="28" height="8" rx="4" fill={theme.border} />
             <rect x="16" y="27" width="28" height="8" rx="4" fill="#55F366" opacity="0.4" />
           </svg>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#000404', marginBottom: 4, fontFamily: "'Poppins', Arial, sans-serif" }}>No lanes yet</div>
-            <div style={{ fontSize: 13, color: '#B0AEA5', fontFamily: "'Poppins', Arial, sans-serif" }}>Click <strong style={{ color: '#000404' }}>Add Lane</strong> in the toolbar to get started.</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: theme.text, marginBottom: 4, fontFamily: "'Poppins', Arial, sans-serif" }}>No lanes yet</div>
+            <div style={{ fontSize: 13, color: theme.textMuted, fontFamily: "'Poppins', Arial, sans-serif" }}>Click <strong style={{ color: theme.text }}>Add Lane</strong> in the toolbar to get started.</div>
           </div>
         </div>
       </div>
@@ -123,7 +116,7 @@ export function GanttChart() {
         flexDirection: 'column',
         height: '100%',
         overflow: 'hidden',
-        background: '#FBF9F3',
+        background: theme.bg,
       }}
     >
       <Toolbar />
@@ -154,7 +147,7 @@ export function GanttChart() {
                 left: 0,
                 zIndex: 20,
                 flexShrink: 0,
-                background: '#FFFFFF',
+                background: theme.surface,
               }}
             >
               <RowPanel rows={rows} tasks={tasks} />

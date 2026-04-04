@@ -27,7 +27,7 @@ const T = {
 export function Toolbar() {
   const {
     viewState, setViewState, addRow, addDivider,
-    undo, redo, past, future,
+    undo, redo, past, future, darkMode, toggleDarkMode,
   } = useGanttStore()
 
   const [showDividerModal, setShowDividerModal] = useState(false)
@@ -248,6 +248,30 @@ export function Toolbar() {
       <ToolbarBtn onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)">
         <RedoIcon />
       </ToolbarBtn>
+
+      <ToolbarDivider />
+
+      {/* Dark mode toggle */}
+      <button
+        onClick={toggleDarkMode}
+        title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 32, height: 32,
+          border: darkMode ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 7,
+          background: darkMode ? 'rgba(255,255,255,0.08)' : 'transparent',
+          cursor: 'pointer',
+          color: darkMode ? T.green : T.midGray,
+          alignSelf: 'center',
+          transition: 'background 0.15s, color 0.15s',
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = T.hover }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = darkMode ? 'rgba(255,255,255,0.08)' : 'transparent' }}
+      >
+        {darkMode ? <SunIcon /> : <MoonIcon />}
+      </button>
     </header>
   )
 }
@@ -360,4 +384,10 @@ function UndoIcon() {
 }
 function RedoIcon() {
   return <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 6.5a4.5 4.5 0 1 1-1-2.7" /><polyline points="11,2 11,6.5 6.5,6.5" /></svg>
+}
+function MoonIcon() {
+  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M12 9.3A6 6 0 0 1 4.7 2a6 6 0 1 0 7.3 7.3z" /></svg>
+}
+function SunIcon() {
+  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="7" cy="7" r="2.5"/><line x1="7" y1="1" x2="7" y2="2.5"/><line x1="7" y1="11.5" x2="7" y2="13"/><line x1="1" y1="7" x2="2.5" y2="7"/><line x1="11.5" y1="7" x2="13" y2="7"/><line x1="2.9" y1="2.9" x2="3.96" y2="3.96"/><line x1="10.04" y1="10.04" x2="11.1" y2="11.1"/><line x1="11.1" y1="2.9" x2="10.04" y2="3.96"/><line x1="3.96" y1="10.04" x2="2.9" y2="11.1"/></svg>
 }

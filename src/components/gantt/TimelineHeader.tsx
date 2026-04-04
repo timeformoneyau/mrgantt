@@ -3,6 +3,7 @@
 import React from 'react'
 import { getMonthGroups, getWeekColumns, LEFT_PANEL_WIDTH } from '@/lib/timeline'
 import { ViewState } from '@/types'
+import { useTheme } from '@/lib/theme'
 
 interface TimelineHeaderProps {
   viewState: ViewState
@@ -13,13 +14,14 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
   const { startDate, endDate, dayWidth } = viewState
   const months = getMonthGroups(startDate, endDate, dayWidth)
   const weeks = getWeekColumns(startDate, endDate, dayWidth)
+  const theme = useTheme()
 
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 30,
       display: 'flex',
-      background: '#FFFFFF',
-      borderBottom: '1px solid #E8E6DE',
+      background: theme.surface,
+      borderBottom: `1px solid ${theme.border}`,
       flexShrink: 0,
     }}>
       {/* Corner */}
@@ -27,14 +29,14 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
         width: LEFT_PANEL_WIDTH, minWidth: LEFT_PANEL_WIDTH,
         flexShrink: 0,
         position: 'sticky', left: 0, zIndex: 31,
-        background: '#FFFFFF',
-        borderRight: '1px solid #E8E6DE',
+        background: theme.surface,
+        borderRight: `1px solid ${theme.border}`,
         display: 'flex', alignItems: 'flex-end',
         padding: '0 16px 7px',
       }}>
         <span style={{
           fontSize: 9, fontWeight: 700,
-          letterSpacing: '0.1em', color: '#B0AEA5',
+          letterSpacing: '0.1em', color: theme.textMuted,
           textTransform: 'uppercase',
           fontFamily: "'Poppins', Arial, sans-serif",
         }}>
@@ -48,7 +50,7 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
         flexShrink: 0, display: 'flex', flexDirection: 'column',
       }}>
         {/* Month row */}
-        <div style={{ position: 'relative', height: 30, borderBottom: '1px solid #F0EEE8' }}>
+        <div style={{ position: 'relative', height: 30, borderBottom: `1px solid ${theme.borderSubtle}` }}>
           {months.map((m) => (
             <div key={m.date.toISOString()} style={{
               position: 'absolute', left: m.x, width: m.width,
@@ -56,19 +58,18 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
               display: 'flex', alignItems: 'center', paddingLeft: 10,
               borderLeft: m.isQuarterStart
                 ? '2px solid rgba(85,243,102,0.6)'
-                : '1px solid #E8E6DE',
+                : `1px solid ${theme.border}`,
               overflow: 'hidden',
             }}>
               <span style={{
                 fontSize: m.width > 100 ? 11 : 9,
                 fontWeight: 700,
                 fontFamily: "'Poppins', Arial, sans-serif",
-                color: m.isQuarterStart ? '#000404' : '#B0AEA5',
+                color: m.isQuarterStart ? theme.text : theme.textMuted,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
                 {m.width > 60 ? m.label : m.shortLabel}
               </span>
-              {/* Quarter start indicator dot */}
               {m.isQuarterStart && (
                 <div style={{
                   width: 5, height: 5, borderRadius: '50%',
@@ -89,8 +90,8 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
               borderLeft: w.isQuarterBoundary
                 ? '2px solid rgba(85,243,102,0.5)'
                 : w.isMonthBoundary
-                ? '1px solid #B0AEA5'
-                : '1px solid #F0EEE8',
+                ? `1px solid ${theme.textMuted}`
+                : `1px solid ${theme.borderSubtle}`,
               overflow: 'hidden',
             }}>
               {w.width > 38 && (
@@ -98,7 +99,7 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
                   fontSize: 10,
                   fontWeight: 500,
                   fontFamily: "'Poppins', Arial, sans-serif",
-                  color: '#B0AEA5',
+                  color: theme.textMuted,
                   whiteSpace: 'nowrap',
                 }}>
                   {w.label}
