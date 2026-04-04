@@ -79,7 +79,11 @@ export function GanttChart() {
   const tasksRef = useRef<Task[]>([])
   const viewStateDayWidthRef = useRef(viewState.dayWidth)
 
-  const sortedRows = [...rows].sort((a, b) => a.order - b.order)
+  const sortedRows = [...rows].sort((a, b) => {
+    if (a.isSystem && !b.isSystem) return 1
+    if (!a.isSystem && b.isSystem) return -1
+    return a.order - b.order
+  })
   sortedRowsRef.current = sortedRows
   tasksRef.current = tasks
   viewStateDayWidthRef.current = viewState.dayWidth

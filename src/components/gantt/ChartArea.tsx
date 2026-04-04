@@ -60,7 +60,11 @@ export function ChartArea({
   const [createDrag, setCreateDrag] = useState<CreateDragState | null>(null)
 
   const { dayWidth, startDate: viewStart } = viewState
-  const sortedRows = [...rows].sort((a, b) => a.order - b.order)
+  const sortedRows = [...rows].sort((a, b) => {
+    if (a.isSystem && !b.isSystem) return 1
+    if (!a.isSystem && b.isSystem) return -1
+    return a.order - b.order
+  })
 
   const rowLayoutMap = new Map<string, ReturnType<typeof computeTaskLayout>>()
   const rowSubLaneCount = new Map<string, number>()

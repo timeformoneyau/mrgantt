@@ -13,7 +13,7 @@ interface RowPanelProps {
 }
 
 export function RowPanel({ rows, tasks }: RowPanelProps) {
-  const sortedRows = [...rows].sort((a, b) => a.order - b.order)
+  const sortedRows = [...rows].sort((a, b) => { if (a.isSystem && !b.isSystem) return 1; if (!a.isSystem && b.isSystem) return -1; return a.order - b.order })
   return (
     <div>
       {sortedRows.map((row) => {
