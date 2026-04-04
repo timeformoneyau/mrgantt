@@ -9,6 +9,7 @@ import {
 } from '@/lib/timeline'
 import { getContrastColor } from '@/lib/colors'
 import { useGanttStore } from '@/store/ganttStore'
+import { useTheme } from '@/lib/theme'
 
 interface TaskBarProps {
   task: Task
@@ -34,6 +35,7 @@ interface DragState {
 
 export function TaskBar({ task, subLane, viewState, isSelected, isDragging = false, isGhost = false, onSelect }: TaskBarProps) {
   const updateTask = useGanttStore((s) => s.updateTask)
+  const theme = useTheme()
   const dragRef = useRef<DragState | null>(null)
   const barRef = useRef<HTMLDivElement>(null)
   const [dragPreview, setDragPreview] = useState<{ startDate: string; endDate: string } | null>(null)
@@ -114,10 +116,10 @@ export function TaskBar({ task, subLane, viewState, isSelected, isDragging = fal
     setIsInlineEditing(false)
   }
 
-  // Selection ring uses Tiimely Green
+  // Selection ring: gap colour matches the row surface so it reads as a clean ring in both modes
   const selectionShadow = isSelected
-    ? `0 0 0 2px #FBF9F3, 0 0 0 3.5px #55F366`
-    : '0 1px 3px rgba(0,4,4,0.10)'
+    ? `0 0 0 2px ${theme.surface}, 0 0 0 3.5px #55F366`
+    : undefined
 
   return (
     <div
@@ -138,7 +140,7 @@ export function TaskBar({ task, subLane, viewState, isSelected, isDragging = fal
         zIndex: isSelected ? 20 : isCurrentlyDragging ? 25 : 10,
         display: 'flex', alignItems: 'center',
         overflow: 'visible',
-        border: '1px solid rgba(0,4,4,0.08)',
+        border: `1px solid ${theme.taskBorder}`,
         transition: isCurrentlyDragging ? 'none' : 'box-shadow 0.12s',
       }}
     >
@@ -168,10 +170,12 @@ export function TaskBar({ task, subLane, viewState, isSelected, isDragging = fal
             onKeyDown={(e) => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') setIsInlineEditing(false) }}
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: 'transparent', border: 'none', outline: 'none',
+              background: 'transparent', border: 'none',
+              outline: '1.5px solid rgba(85,243,102,0.7)',
+              outlineOffset: 2, borderRadius: 3,
               color: textColor, fontSize: 12, fontWeight: 600,
               fontFamily: "'Poppins', Arial, sans-serif",
-              width: '100%', padding: 0,
+              width: '100%', padding: '0 2px',
             }}
           />
         ) : (

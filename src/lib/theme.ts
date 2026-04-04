@@ -10,6 +10,12 @@ export interface Theme {
   textMuted: string
   inputBg: string
   inputBorder: string
+  /** Border treatment for task bars — adapts tint direction per mode */
+  taskBorder: string
+  /** Ghost bar opacity for drag-to-create preview */
+  ghostOpacity: number
+  /** True when dark mode is active — for one-off conditional logic */
+  isDark: boolean
 }
 
 export const lightTheme: Theme = {
@@ -22,6 +28,9 @@ export const lightTheme: Theme = {
   textMuted: '#B0AEA5',
   inputBg: '#fff',
   inputBorder: '#E8E6DE',
+  taskBorder: 'rgba(0,4,4,0.08)',
+  ghostOpacity: 0.25,
+  isDark: false,
 }
 
 export const darkTheme: Theme = {
@@ -34,6 +43,9 @@ export const darkTheme: Theme = {
   textMuted: '#B0AEA5',
   inputBg: '#222222',
   inputBorder: 'rgba(255,255,255,0.12)',
+  taskBorder: 'rgba(255,255,255,0.10)',
+  ghostOpacity: 0.38,
+  isDark: true,
 }
 
 export function useTheme(): Theme {

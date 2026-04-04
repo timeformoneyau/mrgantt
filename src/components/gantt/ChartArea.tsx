@@ -214,6 +214,7 @@ function RowTrack({ row, rowHeight, isCreating, rowBg, rowBorder, onPointerDown,
 // ---------------------------------------------------------------------------
 function GhostBar({ startDate, endDate, viewState }: { startDate: string; endDate: string; viewState: ViewState }) {
   const { dayWidth, startDate: viewStart } = viewState
+  const theme = useTheme()
   const left = dateToX(startDate, viewStart, dayWidth)
   const right = dateToX(endDate, viewStart, dayWidth) + dayWidth
   const width = Math.max(right - left, dayWidth)
@@ -221,7 +222,7 @@ function GhostBar({ startDate, endDate, viewState }: { startDate: string; endDat
   return (
     <div style={{
       position: 'absolute', left, top: TASK_TOP_OFFSET, width, height: TASK_HEIGHT,
-      background: '#55F366', borderRadius: 5, opacity: 0.25,
+      background: '#55F366', borderRadius: 5, opacity: theme.ghostOpacity,
       border: '2px dashed #55F366', pointerEvents: 'none', zIndex: 8,
     }} />
   )

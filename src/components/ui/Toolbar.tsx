@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { format } from 'date-fns'
 import { useGanttStore } from '@/store/ganttStore'
 import { getDefaultViewState, formatDate, parseDate } from '@/lib/timeline'
+import { useTheme, Theme } from '@/lib/theme'
 
 interface AddDividerForm {
   date: string
@@ -29,6 +30,32 @@ export function Toolbar() {
     viewState, setViewState, addRow, addDivider,
     undo, redo, past, future, darkMode, toggleDarkMode,
   } = useGanttStore()
+  const theme = useTheme()
+
+  // Theme-aware dropdown styles — computed here so they pick up the current theme
+  const dropdownInput: React.CSSProperties = {
+    width: '100%', padding: '7px 9px',
+    border: `1px solid ${theme.inputBorder}`, borderRadius: 6,
+    fontSize: 13, outline: 'none', boxSizing: 'border-box',
+    fontFamily: "'Poppins', Arial, sans-serif",
+    color: theme.text, background: theme.inputBg,
+  }
+  const primaryBtnStyle: React.CSSProperties = {
+    flex: 1, padding: '8px 0',
+    background: '#55F366', color: '#000404',
+    border: 'none', borderRadius: 7,
+    fontSize: 13, fontWeight: 700,
+    fontFamily: "'Poppins', Arial, sans-serif",
+    cursor: 'pointer',
+  }
+  const ghostBtnStyle: React.CSSProperties = {
+    flex: 1, padding: '8px 0',
+    background: 'transparent', color: theme.text,
+    border: `1px solid ${theme.border}`, borderRadius: 7,
+    fontSize: 13, fontWeight: 500,
+    fontFamily: "'Poppins', Arial, sans-serif",
+    cursor: 'pointer',
+  }
 
   const [showDividerModal, setShowDividerModal] = useState(false)
   const [showCustomRange, setShowCustomRange] = useState(false)
@@ -158,14 +185,14 @@ export function Toolbar() {
             Custom
           </button>
           {showCustomRange && (
-            <Dropdown onClose={() => setShowCustomRange(false)}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: T.black, marginBottom: 14, fontFamily: "'Poppins', Arial" }}>
+            <Dropdown onClose={() => setShowCustomRange(false)} theme={theme}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: theme.text, marginBottom: 14, fontFamily: "'Poppins', Arial" }}>
                 Custom range
               </div>
-              <DropdownField label="Start date">
+              <DropdownField label="Start date" theme={theme}>
                 <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} style={dropdownInput} />
               </DropdownField>
-              <DropdownField label="End date">
+              <DropdownField label="End date" theme={theme}>
                 <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} style={dropdownInput} />
               </DropdownField>
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
@@ -202,27 +229,27 @@ export function Toolbar() {
           <MarkerIcon /> <span>Marker</span>
         </ToolbarBtn>
         {showDividerModal && (
-          <Dropdown onClose={() => setShowDividerModal(false)} right>
-            <div style={{ fontWeight: 700, fontSize: 13, color: T.black, marginBottom: 14, fontFamily: "'Poppins', Arial" }}>
+          <Dropdown onClose={() => setShowDividerModal(false)} right theme={theme}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: theme.text, marginBottom: 14, fontFamily: "'Poppins', Arial" }}>
               Add divider marker
             </div>
-            <DropdownField label="Date">
+            <DropdownField label="Date" theme={theme}>
               <input type="date" value={dividerForm.date}
                 onChange={(e) => setDividerForm((f) => ({ ...f, date: e.target.value }))}
                 style={dropdownInput} />
             </DropdownField>
-            <DropdownField label="Label">
+            <DropdownField label="Label" theme={theme}>
               <input type="text" value={dividerForm.label} placeholder="e.g. Design freeze"
                 onChange={(e) => setDividerForm((f) => ({ ...f, label: e.target.value }))}
                 style={dropdownInput} />
             </DropdownField>
             <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-              <DropdownField label="Color" style={{ flex: 1 }}>
+              <DropdownField label="Color" style={{ flex: 1 }} theme={theme}>
                 <input type="color" value={dividerForm.color}
                   onChange={(e) => setDividerForm((f) => ({ ...f, color: e.target.value }))}
                   style={{ ...dropdownInput, padding: 2, height: 34 }} />
               </DropdownField>
-              <DropdownField label="Style" style={{ flex: 1 }}>
+              <DropdownField label="Style" style={{ flex: 1 }} theme={theme}>
                 <select value={dividerForm.style}
                   onChange={(e) => setDividerForm((f) => ({ ...f, style: e.target.value as 'solid' | 'dashed' }))}
                   style={dropdownInput}>
@@ -312,16 +339,18 @@ function ToolbarBtn({ onClick, disabled, title, children }: {
   )
 }
 
-function Dropdown({ children, onClose, right }: { children: React.ReactNode; onClose: () => void; right?: boolean }) {
+function Dropdown({ children, onClose, right, theme }: { children: React.ReactNode; onClose: () => void; right?: boolean; theme: Theme }) {
   return (
     <div style={{
       position: 'absolute',
       top: 48, [right ? 'right' : 'left']: 0,
-      background: '#fff',
-      border: '1px solid #E8E6DE',
+      background: theme.surface,
+      border: `1px solid ${theme.border}`,
       borderRadius: 10,
       padding: 18,
-      boxShadow: '0 8px 32px rgba(0,4,4,0.12)',
+      boxShadow: theme.isDark
+        ? '0 8px 32px rgba(0,0,0,0.5)'
+        : '0 8px 32px rgba(0,4,4,0.12)',
       zIndex: 100,
       minWidth: 250,
       fontFamily: "'Poppins', Arial, sans-serif",
@@ -331,42 +360,15 @@ function Dropdown({ children, onClose, right }: { children: React.ReactNode; onC
   )
 }
 
-function DropdownField({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties }) {
+function DropdownField({ label, children, style, theme }: { label: string; children: React.ReactNode; style?: React.CSSProperties; theme: Theme }) {
   return (
     <div style={{ marginBottom: 12, ...style }}>
-      <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#B0AEA5', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+      <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: theme.textMuted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
         {label}
       </label>
       {children}
     </div>
   )
-}
-
-// Styles
-const dropdownInput: React.CSSProperties = {
-  width: '100%', padding: '7px 9px',
-  border: '1px solid #E8E6DE', borderRadius: 6,
-  fontSize: 13, outline: 'none', boxSizing: 'border-box',
-  fontFamily: "'Poppins', Arial, sans-serif",
-  color: '#000404', background: '#fff',
-}
-
-const primaryBtnStyle: React.CSSProperties = {
-  flex: 1, padding: '8px 0',
-  background: '#55F366', color: '#000404',
-  border: 'none', borderRadius: 7,
-  fontSize: 13, fontWeight: 700,
-  fontFamily: "'Poppins', Arial, sans-serif",
-  cursor: 'pointer',
-}
-
-const ghostBtnStyle: React.CSSProperties = {
-  flex: 1, padding: '8px 0',
-  background: 'transparent', color: '#000404',
-  border: '1px solid #E8E6DE', borderRadius: 7,
-  fontSize: 13, fontWeight: 500,
-  fontFamily: "'Poppins', Arial, sans-serif",
-  cursor: 'pointer',
 }
 
 // Icons

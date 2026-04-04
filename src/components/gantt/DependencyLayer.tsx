@@ -4,6 +4,7 @@ import React from 'react'
 import { Task, Dependency, ViewState } from '@/types'
 import { dateToX, ROW_HEIGHT, TASK_HEIGHT, TASK_TOP_OFFSET } from '@/lib/timeline'
 import { computeTaskLayout } from '@/lib/taskLayout'
+import { useTheme } from '@/lib/theme'
 
 interface DependencyLayerProps {
   tasks: Task[]
@@ -18,6 +19,7 @@ interface DependencyLayerProps {
 export function DependencyLayer({
   tasks, dependencies, viewState, rowYPositions, totalWidth, totalHeight, selectedTaskId,
 }: DependencyLayerProps) {
+  const theme = useTheme()
   const taskMap = new Map(tasks.map((t) => [t.id, t]))
 
   // Build sublane map
@@ -43,8 +45,9 @@ export function DependencyLayer({
       pointerEvents: 'none', overflow: 'visible', zIndex: 14,
     }}>
       <defs>
+        {/* Inactive arrow: Mid Gray, slightly dimmer in dark mode to avoid visual noise */}
         <marker id="dep-arrow" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto">
-          <path d="M0,0 L8,3 L0,6 L1.5,3 Z" fill="rgba(176,174,165,0.8)" />
+          <path d="M0,0 L8,3 L0,6 L1.5,3 Z" fill={theme.isDark ? 'rgba(176,174,165,0.5)' : 'rgba(176,174,165,0.8)'} />
         </marker>
         <marker id="dep-arrow-active" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto">
           <path d="M0,0 L8,3 L0,6 L1.5,3 Z" fill="#55F366" />
@@ -75,7 +78,7 @@ export function DependencyLayer({
           <path
             key={dep.id}
             d={`M ${x1} ${y1} C ${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}`}
-            stroke={isActive ? '#55F366' : 'rgba(176,174,165,0.7)'}
+            stroke={isActive ? '#55F366' : theme.isDark ? 'rgba(176,174,165,0.45)' : 'rgba(176,174,165,0.7)'}
             strokeWidth={isActive ? 1.75 : 1.25}
             fill="none"
             strokeDasharray={isActive ? undefined : '4 3'}

@@ -30,6 +30,11 @@ export function GanttChart() {
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Sync body background so no eggshell bleed-through at edges in dark mode
+  useEffect(() => {
+    document.body.style.background = theme.bg
+  }, [theme.bg])
+
   // Keyboard shortcuts
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {

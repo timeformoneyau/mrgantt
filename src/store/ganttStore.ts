@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { Task, Row, Divider, Dependency, ViewState, Snapshot } from '@/types'
-import { getNextColor } from '@/lib/colors'
+import { TASK_COLORS } from '@/lib/colors'
 import { getDefaultViewState, formatDate } from '@/lib/timeline'
 import { addDays } from 'date-fns'
 
@@ -19,6 +19,7 @@ function makeInitialData() {
     { id: 'row-3', name: 'Engineering', order: 2 },
   ]
 
+  // Use the first 6 entries from the Tiimely palette in order
   const tasks: Task[] = [
     {
       id: 'task-1',
@@ -27,7 +28,7 @@ function makeInitialData() {
       owner: 'Alice',
       startDate: fmt(addDays(today, -5)),
       endDate: fmt(addDays(today, 10)),
-      color: '#6366f1',
+      color: TASK_COLORS[0], // Forest Green #084A3C
       rowId: 'row-1',
     },
     {
@@ -37,7 +38,7 @@ function makeInitialData() {
       owner: 'Bob',
       startDate: fmt(addDays(today, 3)),
       endDate: fmt(addDays(today, 18)),
-      color: '#8b5cf6',
+      color: TASK_COLORS[2], // Teal #1FE7DC
       rowId: 'row-2',
     },
     {
@@ -47,7 +48,7 @@ function makeInitialData() {
       owner: 'Carol',
       startDate: fmt(addDays(today, 8)),
       endDate: fmt(addDays(today, 22)),
-      color: '#3b82f6',
+      color: TASK_COLORS[3], // Dark Teal #357762
       rowId: 'row-3',
     },
     {
@@ -57,7 +58,7 @@ function makeInitialData() {
       owner: 'Bob',
       startDate: fmt(addDays(today, 20)),
       endDate: fmt(addDays(today, 38)),
-      color: '#ec4899',
+      color: TASK_COLORS[1], // Tiimely Green #55F366
       rowId: 'row-2',
     },
     {
@@ -67,7 +68,7 @@ function makeInitialData() {
       owner: 'Dave',
       startDate: fmt(addDays(today, 25)),
       endDate: fmt(addDays(today, 50)),
-      color: '#10b981',
+      color: TASK_COLORS[8], // Mid Forest #3A7D64
       rowId: 'row-3',
     },
     {
@@ -77,7 +78,7 @@ function makeInitialData() {
       owner: 'Alice',
       startDate: fmt(addDays(today, 55)),
       endDate: fmt(addDays(today, 62)),
-      color: '#f59e0b',
+      color: TASK_COLORS[5], // Sky Blue #81ECF5
       rowId: 'row-1',
     },
   ]
@@ -87,7 +88,7 @@ function makeInitialData() {
       id: 'div-1',
       date: fmt(addDays(today, 30)),
       label: 'Design Freeze',
-      color: '#8b5cf6',
+      color: TASK_COLORS[1], // Tiimely Green #55F366
       style: 'solid',
     },
   ]
@@ -214,11 +215,8 @@ export const useGanttStore = create<GanttStore>()(
       addTask: (partial) => {
         get()._pushHistory()
         const { _colorIndex } = get()
-        const colors = [
-          '#6366f1', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b',
-          '#ec4899', '#f97316', '#14b8a6', '#ef4444', '#84cc16',
-        ]
-        const color = partial.color ?? colors[_colorIndex % colors.length]
+        // Single source of truth: Tiimely palette from colors.ts
+        const color = partial.color ?? TASK_COLORS[_colorIndex % TASK_COLORS.length]
         const id = uuidv4()
         const task: Task = { ...partial, id, color, description: partial.description ?? '', owner: partial.owner ?? '' }
         set((s) => ({
@@ -394,7 +392,7 @@ export const useGanttStore = create<GanttStore>()(
       },
     }),
     {
-      name: 'mrgant-v1',
+      name: 'mrgant-v2',
       // Only persist data + view — not UI state or history stacks
       partialize: (state) => ({
         tasks: state.tasks,
