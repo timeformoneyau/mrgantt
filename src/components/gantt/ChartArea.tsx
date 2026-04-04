@@ -38,14 +38,22 @@ interface ChartAreaProps {
   children?: React.ReactNode
   /** Task being moved via the floating drag clone — rendered as placeholder */
   movingTaskId?: string | null
+  /** The row id currently highlighted as a drop target during move drag */
+  dragTargetRowId?: string | null
   /** Called when user starts a move drag on a task bar */
-  onMoveStart?: (taskId: string, e: React.PointerEvent, barEl: HTMLDivElement) => void
+  onMoveStart?: (
+    taskId: string,
+    e: React.PointerEvent,
+    barEl: HTMLDivElement,
+    originalClientX: number,
+    originalClientY: number,
+  ) => void
 }
 
 export function ChartArea({
   tasks, rows, viewState, selectedTaskId, onSelectTask,
   totalWidth, rowYPositions, totalHeight, children,
-  movingTaskId, onMoveStart,
+  movingTaskId, dragTargetRowId, onMoveStart,
 }: ChartAreaProps) {
   const addTask = useGanttStore((s) => s.addTask)
   const theme = useTheme()
@@ -164,6 +172,8 @@ export function ChartArea({
             isCreating={isCreatingInRow ?? false}
             rowBg={theme.surface}
             rowBorder={theme.borderSubtle}
+            isSystemRow={!!row.isSystem}
+            isDragTarget={row.id === dragTargetRowId}
             onPointerDown={(e, el) => handleRowPointerDown(e, row.id, el)}
             onPointerMove={(e, el) => handleRowPointerMove(e, el)}
             onPointerUp={(e, el) => handleRowPointerUp(e, el)}
@@ -177,6 +187,7 @@ export function ChartArea({
                 isSelected={task.id === selectedTaskId}
                 onSelect={onSelectTask}
                 isMovePlaceholder={task.id === movingTaskId}
+                totalWidth={totalWidth}
                 onMoveStart={onMoveStart}
               />
             ))}
@@ -195,8 +206,9 @@ export function ChartArea({
 // ---------------------------------------------------------------------------
 // RowTrack
 // ---------------------------------------------------------------------------
-function RowTrack({ row, rowHeight, isCreating, rowBg, rowBorder, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onClick, children }: {
+function RowTrack({ row, rowHeight, isCreating, rowBg, rowBorder, isSystemRow, isDragTarget, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onClick, children }: {
   row: Row; rowHeight: number; isCreating: boolean; rowBg: string; rowBorder: string;
+  isSystemRow: boolean; isDragTarget: boolean;
   onPointerDown: (e: React.PointerEvent, el: HTMLDivElement) => void
   onPointerMove: (e: React.PointerEvent, el: HTMLDivElement) => void
   onPointerUp: (e: React.PointerEvent, el: HTMLDivElement) => void
@@ -215,8 +227,9 @@ function RowTrack({ row, rowHeight, isCreating, rowBg, rowBorder, onPointerDown,
       style={{
         position: 'relative', height: rowHeight,
         borderBottom: `1px solid ${rowBorder}`,
+        borderTop: isSystemRow ? '2px solid rgba(85,243,102,0.15)' : undefined,
         cursor: isCreating ? 'crosshair' : 'default',
-        background: rowBg,
+        background: isDragTarget ? 'rgba(85,243,102,0.07)' : rowBg,
         zIndex: 5,
       }}
     >

@@ -56,6 +56,7 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
           : theme.surface,
         borderRight: `1px solid ${theme.border}`,
         borderBottom: `1px solid ${theme.borderSubtle}`,
+        borderTop: isSystem ? '2px solid rgba(85,243,102,0.2)' : undefined,
         width: LEFT_PANEL_WIDTH,
         minWidth: LEFT_PANEL_WIDTH,
         boxSizing: 'border-box',
@@ -76,6 +77,14 @@ function RowNameCell({ row, rowHeight }: { row: Row; rowHeight: number }) {
       }} />
 
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 14 }}>
+        {isSystem && (
+          <span style={{
+            position: 'absolute', top: 4, left: 14,
+            fontSize: 8, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.1em', color: 'rgba(85,243,102,0.5)',
+            fontFamily: "'Poppins'",
+          }}>Staging</span>
+        )}
         {editing && !isSystem ? (
           <input
             autoFocus

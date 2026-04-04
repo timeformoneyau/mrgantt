@@ -72,6 +72,7 @@ export function GanttChart() {
   const dateLabelRef = useRef<HTMLSpanElement | null>(null)
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
   const [moveClone, setMoveClone] = useState<MoveCloneData | null>(null)
+  const [dragTargetRowId, setDragTargetRowId] = useState<string | null>(null)
 
   // Stable refs for data accessed in event handlers (avoid stale closures)
   const sortedRowsRef = useRef<Row[]>([])
@@ -194,9 +195,14 @@ export function GanttChart() {
         dateLabelRef.current.textContent = `${format(newStart, 'MMM d')} → ${format(newEnd, 'MMM d')}`
       }
 
-      // 3. Detect hovered row (lightweight — no setState, just mutate ref)
+      // 3. Detect hovered row (lightweight — only setState when row changes)
       const rowId = getRowIdFromClientYRef.current(e.clientY)
-      if (rowId) ms.currentRowId = rowId
+      if (rowId) {
+        if (rowId !== ms.currentRowId) {
+          ms.currentRowId = rowId
+          setDragTargetRowId(rowId)
+        }
+      }
     }
 
     function handlePointerUp(e: PointerEvent) {
@@ -220,6 +226,7 @@ export function GanttChart() {
       moveStateRef.current = null
       setMovingTaskId(null)
       setMoveClone(null)
+      setDragTargetRowId(null)
     }
 
     function handlePointerCancel(e: PointerEvent) {
@@ -228,6 +235,7 @@ export function GanttChart() {
       moveStateRef.current = null
       setMovingTaskId(null)
       setMoveClone(null)
+      setDragTargetRowId(null)
     }
 
     window.addEventListener('pointermove', handlePointerMove)
@@ -243,18 +251,27 @@ export function GanttChart() {
   // ---------------------------------------------------------------------------
   // Move-drag start (called by TaskBar via onMoveStart prop)
   // ---------------------------------------------------------------------------
-  const handleMoveStart = useCallback((taskId: string, e: React.PointerEvent, barEl: HTMLDivElement) => {
+  const handleMoveStart = useCallback((
+    taskId: string,
+    e: React.PointerEvent,
+    barEl: HTMLDivElement,
+    originalClientX: number,
+    originalClientY: number,
+  ) => {
     const task = tasksRef.current.find((t) => t.id === taskId)
     if (!task) return
 
     const barRect = barEl.getBoundingClientRect()
-    const grabOffsetX = e.clientX - barRect.left
-    const grabOffsetY = e.clientY - barRect.top
+    const grabOffsetX = originalClientX - barRect.left
+    const grabOffsetY = originalClientY - barRect.top
+    const startClientX = originalClientX
+    const initialX = e.clientX - grabOffsetX
+    const initialY = e.clientY - grabOffsetY
 
     moveStateRef.current = {
       taskId,
       task,
-      startClientX: e.clientX,
+      startClientX,
       grabOffsetX,
       grabOffsetY,
       barWidth: barRect.width,
@@ -264,11 +281,12 @@ export function GanttChart() {
 
     // Trigger React render to mount DragClone (the clone will appear at initialX/Y)
     setMovingTaskId(taskId)
+    setDragTargetRowId(task.rowId)
     setMoveClone({
       task,
       barWidth: barRect.width,
-      initialX: barRect.left,
-      initialY: barRect.top,
+      initialX,
+      initialY,
     })
 
     // Set initial date label text
@@ -372,6 +390,7 @@ export function GanttChart() {
               rowYPositions={rowYPositions}
               totalHeight={totalHeight}
               movingTaskId={movingTaskId}
+              dragTargetRowId={dragTargetRowId}
               onMoveStart={handleMoveStart}
             >
               {/* Dependency arrows */}

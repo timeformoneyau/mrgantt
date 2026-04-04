@@ -5,23 +5,29 @@ import { createPortal } from 'react-dom'
 import { format, addDays, differenceInDays } from 'date-fns'
 import { Task, ViewState } from '@/types'
 import {
-  dateToX, xToDate, ROW_HEIGHT, TASK_HEIGHT, TASK_TOP_OFFSET,
+  dateToX, ROW_HEIGHT, TASK_HEIGHT, TASK_TOP_OFFSET,
   parseDate, formatDate,
 } from '@/lib/timeline'
 import { getContrastColor } from '@/lib/colors'
 import { useGanttStore } from '@/store/ganttStore'
 import { useTheme } from '@/lib/theme'
 
+const MOVE_THRESHOLD = 5 // pixels before move drag commits
+
 interface TaskBarProps {
   task: Task
   subLane: number
   viewState: ViewState
   isSelected: boolean
-  /** If true, render the bar as a faint placeholder (task is being dragged elsewhere) */
   isMovePlaceholder?: boolean
-  /** Called when the user starts a move drag (vertical lane change). If provided,
-   *  the parent handles the drag instead of the bar handling it locally. */
-  onMoveStart?: (taskId: string, e: React.PointerEvent, barEl: HTMLDivElement) => void
+  totalWidth?: number
+  onMoveStart?: (
+    taskId: string,
+    e: React.PointerEvent,
+    barEl: HTMLDivElement,
+    originalClientX: number,
+    originalClientY: number,
+  ) => void
   onSelect: (id: string) => void
 }
 
@@ -37,21 +43,28 @@ interface DragState {
   currentEndDate: string
 }
 
+interface PendingMove {
+  startX: number
+  startY: number
+  pointerId: number
+  committed: boolean
+}
+
 export function TaskBar({
   task, subLane, viewState, isSelected,
   isMovePlaceholder = false,
+  totalWidth,
   onMoveStart,
   onSelect,
 }: TaskBarProps) {
   const updateTask = useGanttStore((s) => s.updateTask)
   const theme = useTheme()
   const dragRef = useRef<DragState | null>(null)
+  const pendingMoveRef = useRef<PendingMove | null>(null)
   const barRef = useRef<HTMLDivElement>(null)
   const [dragPreview, setDragPreview] = useState<{ startDate: string; endDate: string } | null>(null)
   const [isInlineEditing, setIsInlineEditing] = useState(false)
   const [inlineTitle, setInlineTitle] = useState(task.title)
-
-  // Tooltip state
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number; barBottom: number } | null>(null)
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -59,16 +72,19 @@ export function TaskBar({
   const displayStart = dragPreview?.startDate ?? task.startDate
   const displayEnd = dragPreview?.endDate ?? task.endDate
 
-  const left = dateToX(displayStart, viewStart, dayWidth)
-  const right = dateToX(displayEnd, viewStart, dayWidth) + dayWidth
-  const width = Math.max(right - left, dayWidth)
+  const rawLeft = dateToX(displayStart, viewStart, dayWidth)
+  const rawRight = dateToX(displayEnd, viewStart, dayWidth) + dayWidth
+
+  // Clipping: clamp to timeline boundaries
+  const isClippedLeft = rawLeft < 0
+  const isClippedRight = totalWidth !== undefined && rawRight > totalWidth
+  const left = Math.max(0, rawLeft)
+  const right = totalWidth !== undefined ? Math.min(rawRight, totalWidth) : rawRight
+  const width = Math.max(right - left, isClippedLeft || isClippedRight ? 8 : dayWidth)
   const top = subLane * ROW_HEIGHT + TASK_TOP_OFFSET
 
   const textColor = getContrastColor(task.color)
-  const isResizing = dragRef.current !== null
-  const isCurrentlyDragging = isResizing // locally — move drag is handled externally
-
-  // Owner chip: show when owner set and bar is wide enough
+  const isCurrentlyDragging = dragRef.current !== null
   const showOwnerChip = Boolean(task.owner) && width > 80
   const ownerInitials = task.owner
     ? task.owner.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
@@ -85,22 +101,51 @@ export function TaskBar({
     e.preventDefault()
     clearTooltip()
 
-    if (type === 'move' && onMoveStart && barRef.current) {
-      // Hand off to parent for cross-lane vertical drag
+    if (type === 'move') {
+      // Capture pointer but wait for threshold before committing
       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-      onMoveStart(task.id, e, barRef.current)
+      pendingMoveRef.current = {
+        startX: e.clientX, startY: e.clientY,
+        pointerId: e.pointerId, committed: false,
+      }
       return
     }
 
+    // Resize: commit immediately
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     dragRef.current = {
       type, pointerId: e.pointerId, startX: e.clientX,
       originalStartDate: task.startDate, originalEndDate: task.endDate,
       currentStartDate: task.startDate, currentEndDate: task.endDate,
     }
-  }, [task.startDate, task.endDate, task.id, isInlineEditing, onMoveStart, clearTooltip])
+  }, [task.startDate, task.endDate, isInlineEditing, clearTooltip])
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
+    // --- Pending move: check threshold ---
+    const pending = pendingMoveRef.current
+    if (pending && !pending.committed) {
+      const dx = Math.abs(e.clientX - pending.startX)
+      const dy = Math.abs(e.clientY - pending.startY)
+      if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+        pending.committed = true
+        if (onMoveStart && barRef.current) {
+          // Hand off to parent for cross-lane floating drag
+          onMoveStart(task.id, e, barRef.current, pending.startX, pending.startY)
+          return
+        }
+        // No parent handler: fall back to local horizontal move
+        dragRef.current = {
+          type: 'move', pointerId: pending.pointerId,
+          startX: pending.startX,
+          originalStartDate: task.startDate, originalEndDate: task.endDate,
+          currentStartDate: task.startDate, currentEndDate: task.endDate,
+        }
+      }
+      // If committed with onMoveStart, parent handles everything
+      if (pending.committed && onMoveStart) return
+    }
+
+    // --- Local drag (resize or fallback horizontal move) ---
     const drag = dragRef.current
     if (!drag) return
     const dx = e.clientX - drag.startX
@@ -126,9 +171,20 @@ export function TaskBar({
     drag.currentStartDate = ns
     drag.currentEndDate = ne
     setDragPreview({ startDate: ns, endDate: ne })
-  }, [dayWidth])
+  }, [dayWidth, task.startDate, task.endDate, task.id, onMoveStart])
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
+    // Clear pending move (click: onClick will call onSelect; drag: parent's window handler commits)
+    const pending = pendingMoveRef.current
+    if (pending) {
+      pendingMoveRef.current = null
+      // If committed with parent handler, parent's window pointerup commits the drop
+      if (pending.committed && onMoveStart) return
+      // If committed with local drag, fall through to dragRef handling
+      if (!pending.committed) return // onClick fires next and calls onSelect
+    }
+
+    // Local drag commit (resize or local move)
     const drag = dragRef.current
     if (!drag) return
     ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
@@ -137,14 +193,14 @@ export function TaskBar({
     }
     dragRef.current = null
     setDragPreview(null)
-  }, [task.id, updateTask])
+  }, [task.id, updateTask, onMoveStart])
 
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
-    if (dragRef.current || isMovePlaceholder) return
+    if (dragRef.current || pendingMoveRef.current || isMovePlaceholder) return
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     tooltipTimerRef.current = setTimeout(() => {
       setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top, barBottom: rect.bottom })
-    }, 480)
+    }, 280)
   }, [isMovePlaceholder])
 
   const handleMouseLeave = useCallback(() => {
@@ -163,25 +219,22 @@ export function TaskBar({
     setIsInlineEditing(false)
   }
 
-  // Selection ring: gap colour matches row surface so it reads as a clean ring
   const selectionShadow = isSelected
     ? `0 0 0 2px ${theme.surface}, 0 0 0 3.5px #55F366`
     : undefined
 
+  // --- Placeholder mode ---
   if (isMovePlaceholder) {
-    // Ghost placeholder — faint outline where the task originally was
     return (
-      <div
-        style={{
-          position: 'absolute', left, top, width, height: TASK_HEIGHT,
-          background: task.color,
-          borderRadius: 5,
-          opacity: 0.18,
-          pointerEvents: 'none',
-          zIndex: 8,
-          border: `1px dashed ${task.color}`,
-        }}
-      />
+      <div style={{
+        position: 'absolute', left: rawLeft, top, width: Math.max(rawRight - rawLeft, dayWidth), height: TASK_HEIGHT,
+        background: task.color,
+        borderRadius: 5,
+        opacity: 0.18,
+        pointerEvents: 'none',
+        zIndex: 8,
+        border: `1px dashed ${task.color}`,
+      }} />
     )
   }
 
@@ -200,7 +253,7 @@ export function TaskBar({
         style={{
           position: 'absolute', left, top, width, height: TASK_HEIGHT,
           background: task.color,
-          borderRadius: 5,
+          borderRadius: isClippedLeft && isClippedRight ? 0 : isClippedLeft ? '0 5px 5px 0' : isClippedRight ? '5px 0 0 5px' : 5,
           cursor: isCurrentlyDragging ? 'grabbing' : 'grab',
           boxShadow: selectionShadow,
           opacity: isCurrentlyDragging ? 0.9 : 1,
@@ -211,6 +264,33 @@ export function TaskBar({
           transition: isCurrentlyDragging ? 'none' : 'box-shadow 0.12s',
         }}
       >
+        {/* Left clip indicator */}
+        {isClippedLeft && (
+          <div style={{
+            position: 'absolute', left: 0, top: 0,
+            width: Math.min(28, width), height: '100%',
+            background: 'linear-gradient(to right, rgba(0,0,0,0.28), transparent)',
+            borderRadius: '0 0 0 0',
+            pointerEvents: 'none', zIndex: 4,
+            display: 'flex', alignItems: 'center', paddingLeft: 4,
+          }}>
+            <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.85)', fontWeight: 700, lineHeight: 1 }}>◄</span>
+          </div>
+        )}
+
+        {/* Right clip indicator */}
+        {isClippedRight && (
+          <div style={{
+            position: 'absolute', right: 0, top: 0,
+            width: Math.min(28, width), height: '100%',
+            background: 'linear-gradient(to left, rgba(0,0,0,0.28), transparent)',
+            pointerEvents: 'none', zIndex: 4,
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 4,
+          }}>
+            <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.85)', fontWeight: 700, lineHeight: 1 }}>►</span>
+          </div>
+        )}
+
         {/* Left resize handle */}
         <ResizeHandle
           side="left"
@@ -225,7 +305,7 @@ export function TaskBar({
           style={{
             flex: 1, height: '100%',
             display: 'flex', alignItems: 'center',
-            paddingLeft: 10,
+            paddingLeft: isClippedLeft ? 14 : 10,
             paddingRight: showOwnerChip ? 36 : 10,
             overflow: 'hidden',
             cursor: isCurrentlyDragging ? 'grabbing' : 'grab',
@@ -248,23 +328,21 @@ export function TaskBar({
               }}
             />
           ) : (
-            <span
-              style={{
-                fontSize: 12, fontWeight: 600,
-                fontFamily: "'Poppins', Arial, sans-serif",
-                color: textColor,
-                whiteSpace: 'nowrap', overflow: 'hidden',
-                textOverflow: width > 60 ? 'ellipsis' : 'clip',
-                opacity: width < 28 ? 0 : 1,
-                pointerEvents: 'none',
-              }}
-            >
+            <span style={{
+              fontSize: 12, fontWeight: 600,
+              fontFamily: "'Poppins', Arial, sans-serif",
+              color: textColor,
+              whiteSpace: 'nowrap', overflow: 'hidden',
+              textOverflow: width > 60 ? 'ellipsis' : 'clip',
+              opacity: width < 28 ? 0 : 1,
+              pointerEvents: 'none',
+            }}>
               {task.title}
             </span>
           )}
         </div>
 
-        {/* Owner chip — right side, circular avatar with initials */}
+        {/* Owner chip */}
         {showOwnerChip && (
           <div style={{
             position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
@@ -313,9 +391,6 @@ export function TaskBar({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Rich hover tooltip
-// ---------------------------------------------------------------------------
 function TaskTooltip({ task, x, y, barBottom }: { task: Task; x: number; y: number; barBottom: number }) {
   const start = parseDate(task.startDate)
   const end = parseDate(task.endDate)
@@ -338,8 +413,7 @@ function TaskTooltip({ task, x, y, barBottom }: { task: Task; x: number; y: numb
     remainingColor = '#55F366'
   }
 
-  // Preferred: above the bar. Fallback: below.
-  const tooltipHeight = task.description ? 130 : 105
+  const tooltipHeight = task.description ? 135 : 108
   const showAbove = y - tooltipHeight - 10 >= 0
   const tooltipTop = showAbove ? y - tooltipHeight - 8 : barBottom + 8
   const tooltipLeft = Math.max(6, Math.min(x - 115, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 240))
@@ -363,7 +437,6 @@ function TaskTooltip({ task, x, y, barBottom }: { task: Task; x: number; y: numb
       boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
       lineHeight: 1.55,
     }}>
-      {/* Colour dot + title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: task.color, flexShrink: 0 }} />
         <span style={{ fontWeight: 700, fontSize: 12, color: '#FBF9F3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -390,25 +463,21 @@ function TaskTooltip({ task, x, y, barBottom }: { task: Task; x: number; y: numb
         {remainingLabel}
       </div>
 
-      {task.description && (
-        <div style={{
-          color: '#B0AEA5', marginTop: 7, fontSize: 10,
-          borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 7,
-          overflow: 'hidden', display: '-webkit-box',
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical',
-        }}>
-          {task.description}
-        </div>
-      )}
+      <div style={{
+        color: task.description ? '#B0AEA5' : 'rgba(176,174,165,0.45)',
+        marginTop: 7, fontSize: 10,
+        borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 7,
+        overflow: 'hidden', display: '-webkit-box',
+        WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+        fontStyle: task.description ? 'normal' : 'italic',
+      }}>
+        {task.description || 'No description'}
+      </div>
     </div>,
     document.body,
   )
 }
 
-// ---------------------------------------------------------------------------
-// Resize handle
-// ---------------------------------------------------------------------------
 function ResizeHandle({ side, onPointerDown, isVisible, color }: {
   side: 'left' | 'right'; onPointerDown: (e: React.PointerEvent) => void; isVisible: boolean; color: string
 }) {

@@ -14,7 +14,7 @@ function makeInitialData() {
   const fmt = (d: Date) => formatDate(d)
 
   const rows: Row[] = [
-    { id: 'row-unassigned', name: 'Unassigned', order: -1, isSystem: true },
+    { id: 'row-unassigned', name: 'Unassigned', order: 9999, isSystem: true },
     { id: 'row-1', name: 'Product', order: 0 },
     { id: 'row-2', name: 'Design', order: 1 },
     { id: 'row-3', name: 'Engineering', order: 2 },
