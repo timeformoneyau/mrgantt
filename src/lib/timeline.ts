@@ -17,8 +17,8 @@ import {
 // Layout constants
 export const LEFT_PANEL_WIDTH = 240
 export const HEADER_HEIGHT = 64  // 2-row header: 32 + 32
-export const ROW_HEIGHT = 52     // per sub-lane
-export const TASK_HEIGHT = 36
+export const ROW_HEIGHT = 44     // per sub-lane
+export const TASK_HEIGHT = 28
 export const TASK_TOP_OFFSET = 8
 
 export function parseDate(s: string): Date {
@@ -134,7 +134,7 @@ export function getWeekColumns(startDate: string, endDate: string, dayWidth: num
 }
 
 /** Get the default view state for a given zoom preset. */
-export function getDefaultViewState(zoom: '1q' | '2q' = '1q') {
+export function getDefaultViewState(zoom: '1q' | '2q' | 'days' | 'months' = '1q') {
   const today = new Date()
   const qStart = startOfQuarter(today)
   const qEnd = endOfQuarter(today)
@@ -146,13 +146,28 @@ export function getDefaultViewState(zoom: '1q' | '2q' = '1q') {
       dayWidth: 24,
       zoom: '1q' as const,
     }
-  } else {
+  } else if (zoom === '2q') {
     const nextQEnd = endOfQuarter(addDays(qEnd, 1))
     return {
       startDate: formatDate(qStart),
       endDate: formatDate(nextQEnd),
       dayWidth: 12,
       zoom: '2q' as const,
+    }
+  } else if (zoom === 'days') {
+    return {
+      startDate: formatDate(addDays(today, -7)),
+      endDate: formatDate(addDays(today, 21)),
+      dayWidth: 60,
+      zoom: 'days' as const,
+    }
+  } else {
+    const nextQEnd = endOfQuarter(addDays(qEnd, 1))
+    return {
+      startDate: formatDate(qStart),
+      endDate: formatDate(nextQEnd),
+      dayWidth: 5,
+      zoom: 'months' as const,
     }
   }
 }

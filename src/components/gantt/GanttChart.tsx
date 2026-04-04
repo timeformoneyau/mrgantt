@@ -12,6 +12,7 @@ import { TaskSidePanel } from './TaskSidePanel'
 import {
   getTotalWidth,
   LEFT_PANEL_WIDTH,
+  HEADER_HEIGHT,
   ROW_HEIGHT,
   dateToX,
   parseDate,
@@ -144,7 +145,7 @@ export function GanttChart() {
           <TimelineHeader viewState={viewState} totalWidth={totalWidth} />
 
           {/* Content rows — sticky left panel cells + chart area */}
-          <div style={{ display: 'flex', minWidth: LEFT_PANEL_WIDTH + totalWidth }}>
+          <div style={{ display: 'flex', minWidth: LEFT_PANEL_WIDTH + totalWidth, minHeight: `calc(100% - ${HEADER_HEIGHT}px)`, alignItems: 'stretch' }}>
             {/* Left panel — row names */}
             <div
               style={{
@@ -153,6 +154,7 @@ export function GanttChart() {
                 zIndex: 20,
                 flexShrink: 0,
                 background: theme.surface,
+                borderRight: `1px solid ${theme.border}`,
               }}
             >
               <RowPanel rows={rows} tasks={tasks} />

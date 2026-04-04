@@ -28,7 +28,7 @@ const T = {
 export function Toolbar() {
   const {
     viewState, setViewState, addRow, addDivider,
-    undo, redo, past, future, darkMode, toggleDarkMode,
+    undo, redo, past, future, darkMode, toggleDarkMode, resetToDemo,
   } = useGanttStore()
   const theme = useTheme()
 
@@ -278,6 +278,43 @@ export function Toolbar() {
 
       <ToolbarDivider />
 
+      {/* Zoom controls */}
+      <ToolbarBtn
+        onClick={() => setViewState({ dayWidth: Math.max(Math.round(viewState.dayWidth / 1.5), 2) })}
+        title="Zoom out"
+      >
+        <ZoomOutIcon />
+      </ToolbarBtn>
+      <span style={{
+        fontSize: 10, color: T.midGray, fontFamily: "'Poppins', Arial, sans-serif",
+        fontWeight: 600, letterSpacing: '0.04em', minWidth: 30, textAlign: 'center',
+        alignSelf: 'center',
+      }}>
+        {viewState.dayWidth >= 20 ? 'Days' : viewState.dayWidth >= 8 ? 'Weeks' : 'Mo'}
+      </span>
+      <ToolbarBtn
+        onClick={() => setViewState({ dayWidth: Math.min(Math.round(viewState.dayWidth * 1.5), 60) })}
+        title="Zoom in"
+      >
+        <ZoomInIcon />
+      </ToolbarBtn>
+
+      <ToolbarDivider />
+
+      {/* Reset */}
+      <ToolbarBtn
+        onClick={() => {
+          if (confirm('Reset to demo data? All current work will be lost.')) {
+            resetToDemo()
+          }
+        }}
+        title="Reset to demo data"
+      >
+        <ResetIcon />
+      </ToolbarBtn>
+
+      <ToolbarDivider />
+
       {/* Dark mode toggle */}
       <button
         onClick={toggleDarkMode}
@@ -392,4 +429,13 @@ function MoonIcon() {
 }
 function SunIcon() {
   return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="7" cy="7" r="2.5"/><line x1="7" y1="1" x2="7" y2="2.5"/><line x1="7" y1="11.5" x2="7" y2="13"/><line x1="1" y1="7" x2="2.5" y2="7"/><line x1="11.5" y1="7" x2="13" y2="7"/><line x1="2.9" y1="2.9" x2="3.96" y2="3.96"/><line x1="10.04" y1="10.04" x2="11.1" y2="11.1"/><line x1="11.1" y1="2.9" x2="10.04" y2="3.96"/><line x1="3.96" y1="10.04" x2="2.9" y2="11.1"/></svg>
+}
+function ZoomInIcon() {
+  return <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="5.5" cy="5.5" r="4"/><line x1="8.5" y1="8.5" x2="12" y2="12"/><line x1="3.5" y1="5.5" x2="7.5" y2="5.5"/><line x1="5.5" y1="3.5" x2="5.5" y2="7.5"/></svg>
+}
+function ZoomOutIcon() {
+  return <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="5.5" cy="5.5" r="4"/><line x1="8.5" y1="8.5" x2="12" y2="12"/><line x1="3.5" y1="5.5" x2="7.5" y2="5.5"/></svg>
+}
+function ResetIcon() {
+  return <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6.5A4.5 4.5 0 0 1 9.5 2.5"/><path d="M11 6.5A4.5 4.5 0 0 1 3.5 10.5"/><polyline points="2,2 2,6.5 6.5,6.5"/><polyline points="11,11 11,6.5 6.5,6.5"/></svg>
 }

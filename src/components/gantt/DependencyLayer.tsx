@@ -72,17 +72,27 @@ export function DependencyLayer({
         const y2 = toRowY + toSubLane * ROW_HEIGHT + TASK_TOP_OFFSET + TASK_HEIGHT / 2
 
         const isActive = dep.fromTaskId === selectedTaskId || dep.toTaskId === selectedTaskId
+        const hasSelection = selectedTaskId !== null
+
+        const inactiveOpacity = hasSelection ? (isActive ? 1 : 0.12) : (theme.isDark ? 0.45 : 0.7)
+        const stroke = isActive && hasSelection
+          ? '#55F366'
+          : theme.isDark
+            ? `rgba(176,174,165,${inactiveOpacity})`
+            : `rgba(176,174,165,${inactiveOpacity})`
+        const strokeWidth = isActive && hasSelection ? 2 : 1.25
+
         const dx = Math.max(40, Math.abs(x2 - x1) * 0.4)
 
         return (
           <path
             key={dep.id}
             d={`M ${x1} ${y1} C ${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}`}
-            stroke={isActive ? '#55F366' : theme.isDark ? 'rgba(176,174,165,0.45)' : 'rgba(176,174,165,0.7)'}
-            strokeWidth={isActive ? 1.75 : 1.25}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
             fill="none"
-            strokeDasharray={isActive ? undefined : '4 3'}
-            markerEnd={isActive ? 'url(#dep-arrow-active)' : 'url(#dep-arrow)'}
+            strokeDasharray={isActive && hasSelection ? undefined : '4 3'}
+            markerEnd={isActive && hasSelection ? 'url(#dep-arrow-active)' : 'url(#dep-arrow)'}
           />
         )
       })}

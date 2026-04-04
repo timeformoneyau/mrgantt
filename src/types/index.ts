@@ -29,7 +29,7 @@ export interface Dependency {
   toTaskId: string   // must start after fromTask finishes
 }
 
-export type ZoomLevel = '1q' | '2q' | 'custom'
+export type ZoomLevel = '1q' | '2q' | 'days' | 'months' | 'custom'
 
 export interface ViewState {
   startDate: string // YYYY-MM-DD

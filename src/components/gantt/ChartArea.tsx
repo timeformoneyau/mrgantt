@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react'
 import { addDays } from 'date-fns'
 import { Task, Row, ViewState } from '@/types'
 import {
-  dateToX, xToDate, getTotalWidth, getWeekColumns,
+  dateToX, xToDate, getTotalWidth, getWeekColumns, getMonthGroups,
   ROW_HEIGHT, TASK_HEIGHT, TASK_TOP_OFFSET,
   parseDate, formatDate,
 } from '@/lib/timeline'
@@ -59,6 +59,7 @@ export function ChartArea({
 
   const todayX = dateToX(new Date(), viewStart, dayWidth)
   const weekCols = getWeekColumns(viewState.startDate, viewState.endDate, dayWidth)
+  const monthBands = getMonthGroups(viewState.startDate, viewState.endDate, dayWidth)
 
   function handleRowPointerDown(e: React.PointerEvent, rowId: string, rowEl: HTMLDivElement) {
     if (e.button !== 0) return
@@ -110,12 +111,20 @@ export function ChartArea({
   }
 
   return (
-    <div style={{ position: 'relative', width: totalWidth, minWidth: totalWidth }}>
+    <div style={{ position: 'relative', width: totalWidth, minWidth: totalWidth, alignSelf: 'stretch', background: theme.surface }}>
       {/* Background grid */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: totalWidth, height: totalHeight, pointerEvents: 'none', zIndex: 1 }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, width: totalWidth, height: '100%', pointerEvents: 'none', zIndex: 1 }}>
+        {/* Subtle month alternating background bands */}
+        {monthBands.map((m, i) => i % 2 === 1 ? (
+          <div key={m.date.toISOString() + '-band'} style={{
+            position: 'absolute', left: m.x, top: 0, width: m.width, height: '100%',
+            background: theme.isDark ? 'rgba(255,255,255,0.018)' : 'rgba(0,4,4,0.018)',
+            pointerEvents: 'none',
+          }} />
+        ) : null)}
         {weekCols.map((col) => (
           <div key={col.date.toISOString()} style={{
-            position: 'absolute', left: col.x, top: 0, width: 1, height: totalHeight,
+            position: 'absolute', left: col.x, top: 0, width: 1, height: '100%',
             background: col.isQuarterBoundary
               ? 'rgba(85,243,102,0.35)'
               : col.isMonthBoundary
@@ -129,7 +138,7 @@ export function ChartArea({
       {/* Today line — Tiimely Green */}
       {todayX >= 0 && todayX <= totalWidth && (
         <div style={{
-          position: 'absolute', left: todayX, top: 0, width: 2, height: totalHeight,
+          position: 'absolute', left: todayX, top: 0, width: 2, height: '100%',
           background: '#55F366', opacity: 0.75,
           pointerEvents: 'none', zIndex: 13, borderRadius: 1,
         }} />

@@ -159,6 +159,9 @@ interface GanttStore {
   undo: () => void
   redo: () => void
   _pushHistory: () => void
+
+  // Reset
+  resetToDemo: () => void
 }
 
 // ---------------------------------------------------------------------------
@@ -388,6 +391,22 @@ export const useGanttStore = create<GanttStore>()(
           ...next,
           future: future.slice(1),
           past: [...past.slice(0, 49), currentSnapshot],
+        })
+      },
+
+      resetToDemo: () => {
+        const freshData = makeInitialData()
+        set({
+          tasks: freshData.tasks,
+          rows: freshData.rows,
+          dividers: freshData.dividers,
+          dependencies: freshData.dependencies,
+          viewState: getDefaultViewState('1q'),
+          selectedTaskId: null,
+          sidePanelOpen: false,
+          past: [],
+          future: [],
+          _colorIndex: freshData.tasks.length,
         })
       },
     }),
