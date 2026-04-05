@@ -7,6 +7,32 @@ import { getDefaultViewState, formatDate } from '@/lib/timeline'
 import { addDays } from 'date-fns'
 
 // ---------------------------------------------------------------------------
+// Supabase sync helpers
+// ---------------------------------------------------------------------------
+async function loadFromServer(): Promise<Snapshot | null> {
+  try {
+    const res = await fetch('/api/gantt')
+    if (!res.ok) return null
+    const { data } = await res.json()
+    return data ?? null
+  } catch {
+    return null
+  }
+}
+
+async function saveToServer(snapshot: Snapshot) {
+  try {
+    await fetch('/api/gantt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(snapshot),
+    })
+  } catch {
+    // silent — localStorage still works as fallback
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Initial demo data
 // ---------------------------------------------------------------------------
 function makeInitialData() {
@@ -160,12 +186,16 @@ interface GanttStore {
   undo: () => void
   redo: () => void
   _pushHistory: () => void
+  _save: () => void
 
   // Reset
   resetToDemo: () => void
 
   // Clear
   clearAll: () => void
+
+  // Server sync
+  syncFromServer: () => Promise<void>
 }
 
 // ---------------------------------------------------------------------------
@@ -203,6 +233,12 @@ export const useGanttStore = create<GanttStore>()(
         set({ past: [...past.slice(-49), snapshot], future: [] })
       },
 
+      // Save current state to server (call after any data mutation)
+      _save: () => {
+        const { tasks, rows, dividers, dependencies } = get()
+        saveToServer({ tasks, rows, dividers, dependencies })
+      },
+
       // ---------------------------------------------------------------
       // View
       // ---------------------------------------------------------------
@@ -237,6 +273,7 @@ export const useGanttStore = create<GanttStore>()(
           tasks: [...s.tasks, task],
           _colorIndex: s._colorIndex + (partial.color ? 0 : 1),
         }))
+        get()._save()
         return id
       },
 
@@ -245,6 +282,7 @@ export const useGanttStore = create<GanttStore>()(
         set((s) => ({
           tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
         }))
+        get()._save()
       },
 
       deleteTask: (id) => {
@@ -257,6 +295,7 @@ export const useGanttStore = create<GanttStore>()(
           selectedTaskId: s.selectedTaskId === id ? null : s.selectedTaskId,
           sidePanelOpen: s.selectedTaskId === id ? false : s.sidePanelOpen,
         }))
+        get()._save()
       },
 
       // ---------------------------------------------------------------
@@ -272,6 +311,7 @@ export const useGanttStore = create<GanttStore>()(
           order: nextOrder,
         }
         set((s) => ({ rows: [...s.rows, newRow] }))
+        get()._save()
       },
 
       updateRow: (id, updates) => {
@@ -279,6 +319,7 @@ export const useGanttStore = create<GanttStore>()(
         set((s) => ({
           rows: s.rows.map((r) => (r.id === id ? { ...r, ...updates } : r)),
         }))
+        get()._save()
       },
 
       deleteRow: (id) => {
@@ -289,6 +330,7 @@ export const useGanttStore = create<GanttStore>()(
           rows: s.rows.filter((r) => r.id !== id),
           tasks: s.tasks.filter((t) => t.rowId !== id),
         }))
+        get()._save()
       },
 
       moveRowUp: (id) => {
@@ -334,6 +376,7 @@ export const useGanttStore = create<GanttStore>()(
         set((s) => ({
           dividers: [...s.dividers, { ...d, id: uuidv4() }],
         }))
+        get()._save()
       },
 
       updateDivider: (id, updates) => {
@@ -341,11 +384,13 @@ export const useGanttStore = create<GanttStore>()(
         set((s) => ({
           dividers: s.dividers.map((d) => (d.id === id ? { ...d, ...updates } : d)),
         }))
+        get()._save()
       },
 
       deleteDivider: (id) => {
         get()._pushHistory()
         set((s) => ({ dividers: s.dividers.filter((d) => d.id !== id) }))
+        get()._save()
       },
 
       // ---------------------------------------------------------------
@@ -366,6 +411,7 @@ export const useGanttStore = create<GanttStore>()(
             { id: uuidv4(), fromTaskId, toTaskId },
           ],
         }))
+        get()._save()
       },
 
       deleteDependency: (id) => {
@@ -373,6 +419,7 @@ export const useGanttStore = create<GanttStore>()(
         set((s) => ({
           dependencies: s.dependencies.filter((d) => d.id !== id),
         }))
+        get()._save()
       },
 
       // ---------------------------------------------------------------
@@ -438,6 +485,20 @@ export const useGanttStore = create<GanttStore>()(
           future: [],
           selectedTaskId: null,
           sidePanelOpen: false,
+        })
+        saveToServer({ tasks: [], rows: [{ id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true }], dividers: [], dependencies: [] })
+      },
+
+      syncFromServer: async () => {
+        const snapshot = await loadFromServer()
+        if (!snapshot) return
+        set({
+          tasks: snapshot.tasks,
+          rows: snapshot.rows,
+          dividers: snapshot.dividers,
+          dependencies: snapshot.dependencies,
+          past: [],
+          future: [],
         })
       },
     }),
