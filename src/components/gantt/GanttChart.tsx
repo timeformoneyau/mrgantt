@@ -54,7 +54,7 @@ interface MoveCloneData {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-export function GanttChart() {
+export function GanttChart({ onHome }: { onHome?: () => void }) {
   const {
     tasks, rows, dividers, dependencies,
     viewState, selectedTaskId, sidePanelOpen,
@@ -327,7 +327,7 @@ export function GanttChart() {
   if (rows.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bg }}>
-        <Toolbar />
+        <Toolbar onHome={onHome} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
             <rect x="4" y="14" width="28" height="8" rx="4" fill={theme.border} />
@@ -352,7 +352,7 @@ export function GanttChart() {
         background: theme.bg,
       }}
     >
-      <Toolbar />
+      <Toolbar onHome={onHome} />
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
         {/* ---------------------------------------------------------------- */}

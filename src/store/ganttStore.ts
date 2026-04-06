@@ -9,9 +9,9 @@ import { addDays } from 'date-fns'
 // ---------------------------------------------------------------------------
 // Supabase sync helpers
 // ---------------------------------------------------------------------------
-async function loadFromServer(): Promise<Snapshot | null> {
+async function loadFromServer(id: string): Promise<Snapshot | null> {
   try {
-    const res = await fetch('/api/gantt')
+    const res = await fetch(`/api/gantt?id=${id}`)
     if (!res.ok) return null
     const { data } = await res.json()
     return data ?? null
@@ -20,9 +20,9 @@ async function loadFromServer(): Promise<Snapshot | null> {
   }
 }
 
-async function saveToServer(snapshot: Snapshot) {
+async function saveToServer(id: string, snapshot: Snapshot) {
   try {
-    await fetch('/api/gantt', {
+    await fetch(`/api/gantt?id=${id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(snapshot),
@@ -138,6 +138,9 @@ interface GanttStore {
   dividers: Divider[]
   dependencies: Dependency[]
 
+  // Project
+  projectId: string | null
+
   // View / UI
   viewState: ViewState
   selectedTaskId: string | null
@@ -152,6 +155,9 @@ interface GanttStore {
   _colorIndex: number
 
   // ---- Actions ----
+
+  // Project
+  setProjectId: (id: string) => void
 
   // View
   setViewState: (updates: Partial<ViewState>) => void
@@ -195,7 +201,7 @@ interface GanttStore {
   clearAll: () => void
 
   // Server sync
-  syncFromServer: () => Promise<void>
+  syncFromServer: (id: string) => Promise<void>
 }
 
 // ---------------------------------------------------------------------------
@@ -207,6 +213,7 @@ export const useGanttStore = create<GanttStore>()(
   persist(
     (set, get) => ({
       // Initial state
+      projectId: null,
       tasks: initial.tasks,
       rows: initial.rows,
       dividers: initial.dividers,
@@ -235,9 +242,15 @@ export const useGanttStore = create<GanttStore>()(
 
       // Save current state to server (call after any data mutation)
       _save: () => {
-        const { tasks, rows, dividers, dependencies } = get()
-        saveToServer({ tasks, rows, dividers, dependencies })
+        const { projectId, tasks, rows, dividers, dependencies } = get()
+        if (!projectId) return
+        saveToServer(projectId, { tasks, rows, dividers, dependencies })
       },
+
+      // ---------------------------------------------------------------
+      // Project
+      // ---------------------------------------------------------------
+      setProjectId: (id) => set({ projectId: id }),
 
       // ---------------------------------------------------------------
       // View
@@ -486,11 +499,11 @@ export const useGanttStore = create<GanttStore>()(
           selectedTaskId: null,
           sidePanelOpen: false,
         })
-        saveToServer({ tasks: [], rows: [{ id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true }], dividers: [], dependencies: [] })
+        const pid = get().projectId; if (pid) saveToServer(pid, { tasks: [], rows: [{ id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true }], dividers: [], dependencies: [] })
       },
 
-      syncFromServer: async () => {
-        const snapshot = await loadFromServer()
+      syncFromServer: async (id: string) => {
+        const snapshot = await loadFromServer(id)
         if (!snapshot) return
         set({
           tasks: snapshot.tasks,

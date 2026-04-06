@@ -25,7 +25,7 @@ const T = {
   hover: 'rgba(255,255,255,0.07)',
 }
 
-export function Toolbar() {
+export function Toolbar({ onHome }: { onHome?: () => void }) {
   const {
     viewState, setViewState, addRow, addDivider,
     undo, redo, past, future, darkMode, toggleDarkMode, clearAll,
@@ -157,6 +157,35 @@ export function Toolbar() {
           mrgant
         </span>
       </div>
+
+      {/* Home button */}
+      {onHome && (
+        <button
+          onClick={onHome}
+          title="All Charts"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: T.midGray,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 13,
+            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+            padding: '0 8px',
+            borderRadius: 6,
+            marginRight: 4,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#55F366')}
+          onMouseLeave={e => (e.currentTarget.style.color = T.midGray)}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M1 7L7 1L13 7V13H9V9H5V13H1V7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+          </svg>
+          Charts
+        </button>
+      )}
 
       <ToolbarDivider />
 
