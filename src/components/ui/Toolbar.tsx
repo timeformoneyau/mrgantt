@@ -29,6 +29,7 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
   const {
     viewState, setViewState, addRow, addDivider,
     undo, redo, past, future, darkMode, toggleDarkMode, clearAll,
+    tasks, rows, dividers, projectId,
   } = useGanttStore()
   const theme = useTheme()
 
@@ -58,6 +59,7 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
   }
 
   const [showDividerModal, setShowDividerModal] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [showCustomRange, setShowCustomRange] = useState(false)
   const [dividerForm, setDividerForm] = useState<AddDividerForm>({
     date: formatDate(new Date()),
@@ -119,6 +121,32 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
     addDivider(dividerForm)
     setShowDividerModal(false)
     setDividerForm({ date: formatDate(new Date()), label: '', color: '#55F366', style: 'solid' })
+  }
+
+  async function handleExport() {
+    if (!projectId) return
+    setExporting(true)
+    try {
+      // Fetch project name from server
+      const meta = await fetch(`/api/gantt?id=${projectId}`).then(r => r.json())
+      const res = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks, rows, dividers, viewState, projectName: meta.name || 'Project' }),
+      })
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = (meta.name || 'gantt').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_gantt.pptx'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert('Export failed. Please try again.')
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -391,6 +419,41 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
           ? <span style={{ fontSize: 11, color: T.midGray }}>Light</span>
           : <span style={{ fontSize: 11, color: T.midGray }}>Dark</span>
         }
+      </button>
+
+      <ToolbarDivider />
+
+      {/* Export to PPTX */}
+      <button
+        onClick={handleExport}
+        disabled={exporting || !projectId}
+        title="Export to PowerPoint (Tiimely branded)"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '0 12px',
+          height: 32,
+          border: 'none',
+          borderRadius: 7,
+          background: exporting ? 'rgba(117,250,171,0.4)' : '#75FAAB',
+          color: '#141413',
+          cursor: exporting || !projectId ? 'not-allowed' : 'pointer',
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+          alignSelf: 'center',
+          flexShrink: 0,
+          opacity: (!projectId) ? 0.5 : 1,
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={(e) => { if (!exporting && projectId) (e.currentTarget as HTMLElement).style.background = '#55F366' }}
+        onMouseLeave={(e) => { if (!exporting) (e.currentTarget as HTMLElement).style.background = '#75FAAB' }}
+      >
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 9v2a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V9"/>
+          <polyline points="4,6 6.5,8.5 9,6"/>
+          <line x1="6.5" y1="1" x2="6.5" y2="8.5"/>
+        </svg>
+        {exporting ? 'Exporting…' : 'Export PPTX'}
       </button>
     </header>
   )
