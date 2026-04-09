@@ -10,11 +10,39 @@ interface TimelineHeaderProps {
   totalWidth: number
 }
 
+// Classify dayWidth into scale mode (matches Toolbar logic)
+function scaleMode(dayWidth: number) {
+  if (dayWidth >= 20) return 'weekly'
+  if (dayWidth >= 10) return 'sprint'
+  return 'monthly'
+}
+
 export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
   const { startDate, endDate, dayWidth } = viewState
   const months = getMonthGroups(startDate, endDate, dayWidth)
   const weeks = getWeekColumns(startDate, endDate, dayWidth)
   const theme = useTheme()
+  const mode = scaleMode(dayWidth)
+
+  // For sprint mode: label each 2-week column as S1, S2…
+  const sprintColumns = React.useMemo(() => {
+    if (mode !== 'sprint') return []
+    // Group weeks into pairs starting from first week
+    const result = []
+    for (let i = 0; i < weeks.length; i += 2) {
+      const w1 = weeks[i]
+      const w2 = weeks[i + 1]
+      result.push({
+        x: w1.x,
+        width: w2 ? w1.width + w2.width : w1.width,
+        label: `S${Math.floor(i / 2) + 1}`,
+        isMonthBoundary: w1.isMonthBoundary,
+        isQuarterBoundary: w1.isQuarterBoundary,
+        date: w1.date,
+      })
+    }
+    return result
+  }, [weeks, mode])
 
   return (
     <div style={{
@@ -49,7 +77,8 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
         position: 'relative', width: totalWidth, minWidth: totalWidth,
         flexShrink: 0, display: 'flex', flexDirection: 'column',
       }}>
-        {/* Month row */}
+
+        {/* Top row — always months */}
         <div style={{ position: 'relative', height: 30, borderBottom: `1px solid ${theme.borderSubtle}` }}>
           {months.map((m) => (
             <div key={m.date.toISOString()} style={{
@@ -80,33 +109,59 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
           ))}
         </div>
 
-        {/* Week row */}
+        {/* Bottom row — Weekly: week dates | Sprint: S1 S2... | Monthly: hidden */}
         <div style={{ position: 'relative', height: 30 }}>
-          {weeks.map((w) => (
-            <div key={w.date.toISOString()} style={{
-              position: 'absolute', left: w.x, width: w.width,
-              top: 0, height: 30,
-              display: 'flex', alignItems: 'center', paddingLeft: 6,
-              borderLeft: w.isQuarterBoundary
-                ? '2px solid rgba(85,243,102,0.5)'
-                : w.isMonthBoundary
-                ? `1px solid ${theme.textMuted}`
-                : `1px solid ${theme.borderSubtle}`,
-              overflow: 'hidden',
-            }}>
-              {w.width > 38 && (
+          {mode === 'monthly' ? null : mode === 'sprint' ? (
+            // Sprint columns — S1, S2, S3...
+            sprintColumns.map((s, i) => (
+              <div key={i} style={{
+                position: 'absolute', left: s.x, width: s.width,
+                top: 0, height: 30,
+                display: 'flex', alignItems: 'center', paddingLeft: 8,
+                borderLeft: s.isQuarterBoundary
+                  ? '2px solid rgba(85,243,102,0.5)'
+                  : s.isMonthBoundary
+                  ? `1px solid ${theme.textMuted}`
+                  : `1px solid ${theme.borderSubtle}`,
+                overflow: 'hidden',
+              }}>
                 <span style={{
-                  fontSize: 11,
-                  fontWeight: 500,
+                  fontSize: 11, fontWeight: 700,
                   fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                  color: theme.textMuted,
+                  color: '#55F366',
                   whiteSpace: 'nowrap',
                 }}>
-                  {w.label}
+                  {s.label}
                 </span>
-              )}
-            </div>
-          ))}
+              </div>
+            ))
+          ) : (
+            // Weekly mode — show week start dates
+            weeks.map((w) => (
+              <div key={w.date.toISOString()} style={{
+                position: 'absolute', left: w.x, width: w.width,
+                top: 0, height: 30,
+                display: 'flex', alignItems: 'center', paddingLeft: 6,
+                borderLeft: w.isQuarterBoundary
+                  ? '2px solid rgba(85,243,102,0.5)'
+                  : w.isMonthBoundary
+                  ? `1px solid ${theme.textMuted}`
+                  : `1px solid ${theme.borderSubtle}`,
+                overflow: 'hidden',
+              }}>
+                {w.width > 38 && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 500,
+                    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                    color: theme.textMuted,
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {w.label}
+                  </span>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -82,6 +82,30 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
     setViewState(getDefaultViewState(zoom))
   }
 
+  // Scale modes — set dayWidth so one "unit" = one week / sprint / month
+  // Weekly: 7 days visible per ~28px column → dayWidth 28
+  // Sprint: 14 days per column → dayWidth 14
+  // Monthly: ~30 days per column → dayWidth 6
+  const SCALE_MODES = [
+    { id: 'weekly',  label: 'Weekly',  dayWidth: 28 },
+    { id: 'sprint',  label: 'Sprint',  dayWidth: 14 },
+    { id: 'monthly', label: 'Monthly', dayWidth: 6  },
+  ] as const
+
+  type ScaleMode = typeof SCALE_MODES[number]['id']
+
+  function currentScaleMode(): ScaleMode {
+    const dw = viewState.dayWidth
+    if (dw >= 20) return 'weekly'
+    if (dw >= 10) return 'sprint'
+    return 'monthly'
+  }
+
+  function handleScale(mode: ScaleMode) {
+    const m = SCALE_MODES.find(s => s.id === mode)!
+    setViewState({ dayWidth: m.dayWidth })
+  }
+
   function handleCustomRange() {
     if (customStart >= customEnd) return
     setCustomRange({ start: customStart, end: customEnd })
@@ -217,14 +241,14 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
 
       <ToolbarDivider />
 
-      {/* Zoom toggle */}
+      {/* Scale mode toggle — Weekly / Sprint / Monthly */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        {(['1q', '2q'] as const).map((z) => {
-          const active = viewState.zoom === z
+        {SCALE_MODES.map((m) => {
+          const active = currentScaleMode() === m.id
           return (
             <button
-              key={z}
-              onClick={() => handleZoom(z)}
+              key={m.id}
+              onClick={() => handleScale(m.id)}
               style={{
                 padding: '5px 13px',
                 borderRadius: 6,
@@ -240,7 +264,7 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
               onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = T.hover }}
               onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
             >
-              {z === '1q' ? '1 Quarter' : '2 Quarters'}
+              {m.label}
             </button>
           )
         })}
@@ -353,29 +377,6 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
       </ToolbarBtn>
       <ToolbarBtn onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)">
         <RedoIcon />
-      </ToolbarBtn>
-
-      <ToolbarDivider />
-
-      {/* Zoom controls */}
-      <ToolbarBtn
-        onClick={() => setViewState({ dayWidth: Math.max(Math.round(viewState.dayWidth / 1.5), 2) })}
-        title="Zoom out"
-      >
-        <ZoomOutIcon />
-      </ToolbarBtn>
-      <span style={{
-        fontSize: 10, color: T.midGray, fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-        fontWeight: 600, letterSpacing: '0.04em', minWidth: 30, textAlign: 'center',
-        alignSelf: 'center',
-      }}>
-        {viewState.dayWidth >= 20 ? 'Days' : viewState.dayWidth >= 8 ? 'Weeks' : 'Mo'}
-      </span>
-      <ToolbarBtn
-        onClick={() => setViewState({ dayWidth: Math.min(Math.round(viewState.dayWidth * 1.5), 60) })}
-        title="Zoom in"
-      >
-        <ZoomInIcon />
       </ToolbarBtn>
 
       <ToolbarDivider />
