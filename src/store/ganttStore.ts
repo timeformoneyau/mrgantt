@@ -191,6 +191,7 @@ interface GanttStore {
   toggleGroup: (groupId: string) => void
   addLane: (opts?: { groupId?: string; name?: string }) => string
   moveLaneToGroup: (laneId: string, groupId: string) => void
+  reorderRows: (dragId: string, targetId: string, position: 'before' | 'after' | 'into') => void
   beginEditRow: (rowId: string) => void
   endEditRow: () => void
 
@@ -480,7 +481,7 @@ export const useGanttStore = create<GanttStore>()(
         get()._save()
       },
 
-      addLane: (opts = {}) => {
+      addLane: (opts: { groupId?: string; name?: string } = {}) => {
         get()._pushHistory()
         const { rows } = get()
         const groups = rows.filter(r => r.type === 'group').sort((a, b) => a.order - b.order)
@@ -506,6 +507,59 @@ export const useGanttStore = create<GanttStore>()(
         set(s => ({
           rows: s.rows.map(r => r.id === laneId ? { ...r, parentGroupId: groupId, order: nextOrder } : r),
         }))
+        get()._save()
+      },
+
+      reorderRows: (dragId, targetId, position) => {
+        const { rows } = get()
+        const drag = rows.find(r => r.id === dragId)
+        const target = rows.find(r => r.id === targetId)
+        if (!drag || !target || dragId === targetId) return
+
+        get()._pushHistory()
+
+        if (drag.type === 'group') {
+          // Reorder groups — only before/after other groups
+          const groups = rows.filter(r => r.type === 'group').sort((a, b) => a.order - b.order)
+          const withoutDrag = groups.filter(g => g.id !== dragId)
+          const targetIdx = withoutDrag.findIndex(g => g.id === targetId)
+          if (targetIdx < 0) return
+          const insertIdx = position === 'before' ? targetIdx : targetIdx + 1
+          withoutDrag.splice(insertIdx, 0, drag)
+          set(s => ({
+            rows: s.rows.map(r => {
+              const idx = withoutDrag.findIndex(g => g.id === r.id)
+              return idx >= 0 ? { ...r, order: idx } : r
+            }),
+          }))
+        } else {
+          // Lane reorder
+          if (position === 'into') {
+            // Drop onto group header — append as last child of that group
+            const siblings = rows.filter(r => r.parentGroupId === targetId && r.id !== dragId)
+            const nextOrder = siblings.length > 0 ? Math.max(...siblings.map(r => r.order)) + 1 : 0
+            set(s => ({
+              rows: s.rows.map(r => r.id === dragId ? { ...r, parentGroupId: targetId, order: nextOrder } : r),
+            }))
+          } else {
+            // before/after another lane — may cross group boundary
+            const newGroupId = target.parentGroupId
+            const siblings = rows
+              .filter(r => r.parentGroupId === newGroupId && r.id !== dragId)
+              .sort((a, b) => a.order - b.order)
+            const targetIdx = siblings.findIndex(r => r.id === targetId)
+            if (targetIdx < 0) return
+            const insertIdx = position === 'before' ? targetIdx : targetIdx + 1
+            siblings.splice(insertIdx, 0, drag)
+            set(s => ({
+              rows: s.rows.map(r => {
+                const idx = siblings.findIndex(u => u.id === r.id)
+                return idx >= 0 ? { ...r, order: idx, parentGroupId: newGroupId } : r
+              }),
+            }))
+          }
+        }
+
         get()._save()
       },
 
