@@ -23,7 +23,22 @@ export async function POST(req: Request) {
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const body = await req.json()
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  if (
+    typeof body !== 'object' || body === null ||
+    !Array.isArray((body as Record<string, unknown>).tasks) ||
+    !Array.isArray((body as Record<string, unknown>).rows) ||
+    !Array.isArray((body as Record<string, unknown>).dividers) ||
+    !Array.isArray((body as Record<string, unknown>).dependencies)
+  ) {
+    return NextResponse.json({ error: 'Body must be a snapshot with tasks, rows, dividers, and dependencies arrays' }, { status: 400 })
+  }
 
   const { error } = await supabase
     .from('gantt_plans')

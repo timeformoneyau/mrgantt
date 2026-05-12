@@ -9,26 +9,27 @@ import { addDays } from 'date-fns'
 // ---------------------------------------------------------------------------
 // Supabase sync helpers
 // ---------------------------------------------------------------------------
-async function loadFromServer(id: string): Promise<Snapshot | null> {
+async function loadFromServer(id: string): Promise<{ data: Snapshot | null; error: boolean }> {
   try {
     const res = await fetch(`/api/gantt?id=${id}`)
-    if (!res.ok) return null
+    if (!res.ok) return { data: null, error: true }
     const { data } = await res.json()
-    return data ?? null
+    return { data: data ?? null, error: false }
   } catch {
-    return null
+    return { data: null, error: true }
   }
 }
 
-async function saveToServer(id: string, snapshot: Snapshot) {
+async function saveToServer(id: string, snapshot: Snapshot): Promise<boolean> {
   try {
-    await fetch(`/api/gantt?id=${id}`, {
+    const res = await fetch(`/api/gantt?id=${id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(snapshot),
     })
+    return res.ok
   } catch {
-    // silent — localStorage still works as fallback
+    return false
   }
 }
 
@@ -153,6 +154,7 @@ interface GanttStore {
 
   // Internal
   _colorIndex: number
+  syncStatus: 'idle' | 'saving' | 'saved' | 'error'
 
   // ---- Actions ----
 
@@ -225,6 +227,7 @@ export const useGanttStore = create<GanttStore>()(
       past: [],
       future: [],
       _colorIndex: initial.tasks.length,
+      syncStatus: 'idle' as const,
 
       // ---------------------------------------------------------------
       // Internal helpers
@@ -244,7 +247,15 @@ export const useGanttStore = create<GanttStore>()(
       _save: () => {
         const { projectId, tasks, rows, dividers, dependencies } = get()
         if (!projectId) return
-        saveToServer(projectId, { tasks, rows, dividers, dependencies })
+        set({ syncStatus: 'saving' })
+        saveToServer(projectId, { tasks, rows, dividers, dependencies }).then((ok) => {
+          set({ syncStatus: ok ? 'saved' : 'error' })
+          if (ok) {
+            setTimeout(() => {
+              if (get().syncStatus === 'saved') set({ syncStatus: 'idle' })
+            }, 2000)
+          }
+        })
       },
 
       // ---------------------------------------------------------------
@@ -269,6 +280,8 @@ export const useGanttStore = create<GanttStore>()(
       // Tasks
       // ---------------------------------------------------------------
       addTask: (partial) => {
+        // Reject invalid date range
+        if (partial.startDate > partial.endDate) return ''
         get()._pushHistory()
         const { _colorIndex } = get()
         // Single source of truth: Tiimely palette from colors.ts
@@ -291,9 +304,26 @@ export const useGanttStore = create<GanttStore>()(
       },
 
       updateTask: (id, updates) => {
+        const task = get().tasks.find((t) => t.id === id)
+        if (!task) return
+
+        // Enforce startDate <= endDate, clamping to a 1-day task rather than allowing inversion
+        let safeUpdates = { ...updates }
+        const nextStart = updates.startDate ?? task.startDate
+        const nextEnd = updates.endDate ?? task.endDate
+        if (nextStart > nextEnd) {
+          if (updates.startDate !== undefined && updates.endDate === undefined) {
+            safeUpdates = { ...safeUpdates, endDate: updates.startDate }
+          } else if (updates.endDate !== undefined && updates.startDate === undefined) {
+            safeUpdates = { ...safeUpdates, startDate: updates.endDate }
+          } else {
+            return
+          }
+        }
+
         get()._pushHistory()
         set((s) => ({
-          tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...safeUpdates } : t)),
         }))
         get()._save()
       },
@@ -503,21 +533,26 @@ export const useGanttStore = create<GanttStore>()(
       },
 
       syncFromServer: async (id: string) => {
-        const snapshot = await loadFromServer(id)
-        if (!snapshot) return
+        const { data, error } = await loadFromServer(id)
+        if (error) {
+          set({ syncStatus: 'error' })
+          return
+        }
+        if (!data) return
         set({
-          tasks: snapshot.tasks,
-          rows: snapshot.rows,
-          dividers: snapshot.dividers,
-          dependencies: snapshot.dependencies,
+          tasks: data.tasks,
+          rows: data.rows,
+          dividers: data.dividers,
+          dependencies: data.dependencies,
           past: [],
           future: [],
+          syncStatus: 'idle',
         })
       },
     }),
     {
       name: 'mrgant-v6',
-      // Only persist data + view — not UI state or history stacks
+      // Only persist data + view — not UI state, history stacks, or sync status
       partialize: (state) => ({
         tasks: state.tasks,
         rows: state.rows,

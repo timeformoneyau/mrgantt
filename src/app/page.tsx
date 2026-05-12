@@ -25,6 +25,7 @@ export default function HomePage() {
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -35,8 +36,12 @@ export default function HomePage() {
 
   useEffect(() => {
     fetch('/api/projects')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to load charts')
+        return r.json()
+      })
       .then(d => { setProjects(d.projects ?? []); setLoading(false) })
+      .catch(e => { setError(e.message); setLoading(false) })
   }, [])
 
   useEffect(() => {
@@ -49,34 +54,52 @@ export default function HomePage() {
 
   async function createProject() {
     const name = newName.trim() || 'Untitled'
-    const res = await fetch('/api/projects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    })
-    const { project } = await res.json()
-    setCreating(false)
-    setNewName('')
-    router.push(`/chart/${project.id}`)
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      if (!res.ok) throw new Error('Failed to create chart')
+      const { project } = await res.json()
+      if (!project?.id) throw new Error('Unexpected response from server')
+      setCreating(false)
+      setNewName('')
+      router.push(`/chart/${project.id}`)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to create chart')
+    }
   }
 
   async function deleteProject(id: number) {
     setDeletingId(id)
-    await fetch(`/api/projects/${id}`, { method: 'DELETE' })
-    setProjects(p => p.filter(x => x.id !== id))
-    setDeletingId(null)
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete chart')
+      setProjects(p => p.filter(x => x.id !== id))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to delete chart')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   async function renameProject(id: number) {
     const name = renameValue.trim()
     if (!name) { setRenamingId(null); return }
-    await fetch(`/api/projects/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    })
-    setProjects(p => p.map(x => x.id === id ? { ...x, name } : x))
-    setRenamingId(null)
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      if (!res.ok) throw new Error('Failed to rename chart')
+      setProjects(p => p.map(x => x.id === id ? { ...x, name } : x))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to rename chart')
+    } finally {
+      setRenamingId(null)
+    }
   }
 
   const s: Record<string, React.CSSProperties> = {
@@ -107,6 +130,21 @@ export default function HomePage() {
       </header>
       <main style={s.body}>
         <div style={s.sectionTitle}>Your Charts</div>
+        {error && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.3)',
+            borderRadius: 8, padding: '10px 14px', marginBottom: 20,
+            fontSize: 13, color: '#ff6b6b',
+            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+          }}>
+            <span>{error}</span>
+            <button
+              onClick={() => setError(null)}
+              style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 0 0 12px' }}
+            >×</button>
+          </div>
+        )}
         {loading ? (
           <div style={{ color: 'rgba(251,249,243,0.3)', fontSize: '14px' }}>Loading...</div>
         ) : (
