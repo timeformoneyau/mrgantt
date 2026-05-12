@@ -31,7 +31,9 @@ export function TaskSidePanel({ taskId, onClose }: TaskSidePanelProps) {
     fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
   }
   const task = tasks.find((t) => t.id === taskId)
-  const sortedRows = [...rows].sort((a, b) => { if (a.isSystem && !b.isSystem) return 1; if (!a.isSystem && b.isSystem) return -1; return a.order - b.order })
+  const sortedRows = [...rows]
+    .filter(r => r.type !== 'group')
+    .sort((a, b) => { if (a.isSystem && !b.isSystem) return 1; if (!a.isSystem && b.isSystem) return -1; return a.order - b.order })
   const [form, setForm] = useState<Omit<Task, 'id'> | null>(null)
   const [showDepPicker, setShowDepPicker] = useState(false)
 

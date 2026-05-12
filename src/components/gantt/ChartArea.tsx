@@ -5,10 +5,11 @@ import { addDays } from 'date-fns'
 import { Task, Row, ViewState } from '@/types'
 import {
   dateToX, xToDate, getTotalWidth, getWeekColumns, getMonthGroups,
-  ROW_HEIGHT, TASK_HEIGHT, TASK_TOP_OFFSET,
+  ROW_HEIGHT, TASK_HEIGHT, TASK_TOP_OFFSET, GROUP_HEADER_HEIGHT,
   parseDate, formatDate,
 } from '@/lib/timeline'
 import { computeTaskLayout, getSubLaneCount } from '@/lib/taskLayout'
+import { sortedVisibleRows, isGroupRow } from '@/lib/rowUtils'
 import { TaskBar } from './TaskBar'
 import { useGanttStore } from '@/store/ganttStore'
 import { useTheme } from '@/lib/theme'
@@ -60,15 +61,12 @@ export function ChartArea({
   const [createDrag, setCreateDrag] = useState<CreateDragState | null>(null)
 
   const { dayWidth, startDate: viewStart } = viewState
-  const sortedRows = [...rows].sort((a, b) => {
-    if (a.isSystem && !b.isSystem) return 1
-    if (!a.isSystem && b.isSystem) return -1
-    return a.order - b.order
-  })
+  const sortedRows = sortedVisibleRows(rows)
 
   const rowLayoutMap = new Map<string, ReturnType<typeof computeTaskLayout>>()
   const rowSubLaneCount = new Map<string, number>()
   for (const row of sortedRows) {
+    if (isGroupRow(row)) continue  // groups have no tasks
     const rowTasks = tasks.filter((t) => t.rowId === row.id)
     rowLayoutMap.set(row.id, computeTaskLayout(rowTasks))
     rowSubLaneCount.set(row.id, Math.max(1, getSubLaneCount(rowTasks)))
@@ -163,6 +161,21 @@ export function ChartArea({
 
       {/* Rows */}
       {sortedRows.map((row) => {
+        if (isGroupRow(row)) {
+          // Group header band — non-interactive, same height as panel GroupHeader
+          return (
+            <div
+              key={row.id}
+              style={{
+                height: GROUP_HEADER_HEIGHT,
+                borderBottom: `1px solid ${theme.border}`,
+                background: theme.isDark ? 'rgba(85,243,102,0.04)' : 'rgba(0,74,60,0.03)',
+                pointerEvents: 'none',
+              }}
+            />
+          )
+        }
+
         const numLanes = rowSubLaneCount.get(row.id) ?? 1
         const rowHeight = numLanes * ROW_HEIGHT
         const layout = rowLayoutMap.get(row.id) ?? []
@@ -176,7 +189,7 @@ export function ChartArea({
             isCreating={isCreatingInRow ?? false}
             rowBg={theme.surface}
             rowBorder={theme.borderSubtle}
-            isSystemRow={!!row.isSystem}
+            isSystemRow={!!row.isSystem || row.type === 'system'}
             isDragTarget={row.id === dragTargetRowId}
             onPointerDown={(e, el) => handleRowPointerDown(e, row.id, el)}
             onPointerMove={(e, el) => handleRowPointerMove(e, el)}
