@@ -4,6 +4,7 @@ import React from 'react'
 import { getMonthGroups, getWeekColumns, LEFT_PANEL_WIDTH } from '@/lib/timeline'
 import { ViewState } from '@/types'
 import { useTheme } from '@/lib/theme'
+import { useGanttStore } from '@/store/ganttStore'
 
 interface TimelineHeaderProps {
   viewState: ViewState
@@ -23,6 +24,7 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
   const weeks = getWeekColumns(startDate, endDate, dayWidth)
   const theme = useTheme()
   const mode = scaleMode(dayWidth)
+  const { addGroup, addLane, beginEditRow } = useGanttStore()
 
   // For sprint mode: label each 2-week column as S1, S2…
   const sprintColumns = React.useMemo(() => {
@@ -52,15 +54,15 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
       borderBottom: `1px solid ${theme.border}`,
       flexShrink: 0,
     }}>
-      {/* Corner */}
+      {/* Corner — pane header with lane actions */}
       <div style={{
         width: LEFT_PANEL_WIDTH, minWidth: LEFT_PANEL_WIDTH,
         flexShrink: 0,
         position: 'sticky', left: 0, zIndex: 31,
         background: theme.surface,
-        borderRight: `1px solid ${theme.border}`,
-        display: 'flex', alignItems: 'flex-end',
-        padding: '0 16px 7px',
+        borderRight: `2px solid ${theme.isDark ? 'rgba(255,255,255,0.16)' : theme.border}`,
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+        padding: '0 10px 8px 16px', gap: 5,
       }}>
         <span style={{
           fontSize: 10, fontWeight: 700,
@@ -70,6 +72,23 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
         }}>
           LANES
         </span>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <CornerBtn
+            onClick={() => addGroup()}
+            theme={theme}
+            title="Add group"
+          >
+            + Group
+          </CornerBtn>
+          <CornerBtn
+            onClick={() => { const id = addLane({}); beginEditRow(id) }}
+            theme={theme}
+            title="Add lane"
+            primary
+          >
+            + Lane
+          </CornerBtn>
+        </div>
       </div>
 
       {/* Timeline columns */}
@@ -165,5 +184,34 @@ export function TimelineHeader({ viewState, totalWidth }: TimelineHeaderProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+function CornerBtn({ onClick, title, children, theme, primary = false }: {
+  onClick: () => void; title: string; children: React.ReactNode
+  theme: ReturnType<typeof import('@/lib/theme').useTheme>; primary?: boolean
+}) {
+  const base: React.CSSProperties = {
+    padding: '3px 8px', border: 'none', borderRadius: 5,
+    fontSize: 10, fontWeight: 700, cursor: 'pointer',
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+    letterSpacing: '0.03em', transition: 'background 0.12s',
+    background: primary ? '#55F366' : theme.isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,4,4,0.06)',
+    color: primary ? '#000404' : theme.textMuted,
+  }
+  return (
+    <button
+      onClick={onClick} title={title}
+      style={base}
+      onMouseEnter={e => {
+        if (primary) (e.currentTarget as HTMLElement).style.background = '#75FAAB'
+        else (e.currentTarget as HTMLElement).style.background = theme.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,4,4,0.1)'
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.background = base.background as string
+      }}
+    >
+      {children}
+    </button>
   )
 }

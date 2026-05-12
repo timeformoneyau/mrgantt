@@ -389,7 +389,8 @@ export function GanttChart({ onHome }: { onHome?: () => void }) {
                 zIndex: 20,
                 flexShrink: 0,
                 background: theme.surface,
-                borderRight: `1px solid ${theme.border}`,
+                borderRight: `2px solid ${theme.isDark ? 'rgba(255,255,255,0.16)' : theme.border}`,
+                boxShadow: theme.isDark ? '4px 0 16px rgba(0,0,0,0.45)' : '4px 0 10px rgba(0,4,4,0.08)',
               }}
             >
               <RowPanel rows={rows} tasks={tasks} />

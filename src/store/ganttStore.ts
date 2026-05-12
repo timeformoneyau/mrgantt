@@ -190,6 +190,7 @@ interface GanttStore {
   addGroup: (name?: string) => string
   toggleGroup: (groupId: string) => void
   addLane: (opts?: { groupId?: string; name?: string }) => string
+  moveLaneToGroup: (laneId: string, groupId: string) => void
   beginEditRow: (rowId: string) => void
   endEditRow: () => void
 
@@ -494,6 +495,18 @@ export const useGanttStore = create<GanttStore>()(
         set(s => ({ rows: [...s.rows, lane] }))
         get()._save()
         return id
+      },
+
+      moveLaneToGroup: (laneId, groupId) => {
+        const lane = get().rows.find(r => r.id === laneId)
+        if (!lane || lane.type !== 'lane') return
+        get()._pushHistory()
+        const siblings = get().rows.filter(r => r.parentGroupId === groupId)
+        const nextOrder = siblings.length > 0 ? Math.max(...siblings.map(r => r.order)) + 1 : 0
+        set(s => ({
+          rows: s.rows.map(r => r.id === laneId ? { ...r, parentGroupId: groupId, order: nextOrder } : r),
+        }))
+        get()._save()
       },
 
       beginEditRow: (rowId) => set({ editingRowId: rowId, newRowId: rowId }),

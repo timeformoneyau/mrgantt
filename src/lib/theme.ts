@@ -34,15 +34,15 @@ export const lightTheme: Theme = {
 }
 
 export const darkTheme: Theme = {
-  bg: '#000404',
-  surface: '#1A1A1A',
-  surfaceAlt: '#111111',
-  border: 'rgba(255,255,255,0.10)',
-  borderSubtle: 'rgba(255,255,255,0.06)',
+  bg: '#0A0A09',
+  surface: '#1C1C1B',
+  surfaceAlt: '#141413',
+  border: 'rgba(255,255,255,0.13)',
+  borderSubtle: 'rgba(255,255,255,0.07)',
   text: '#FBF9F3',
   textMuted: '#B0AEA5',
-  inputBg: '#222222',
-  inputBorder: 'rgba(255,255,255,0.12)',
+  inputBg: '#242423',
+  inputBorder: 'rgba(255,255,255,0.15)',
   taskBorder: 'rgba(255,255,255,0.10)',
   ghostOpacity: 0.38,
   isDark: true,
