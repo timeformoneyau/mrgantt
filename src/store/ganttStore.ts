@@ -9,26 +9,27 @@ import { addDays } from 'date-fns'
 // ---------------------------------------------------------------------------
 // Supabase sync helpers
 // ---------------------------------------------------------------------------
-async function loadFromServer(id: string): Promise<Snapshot | null> {
+async function loadFromServer(id: string): Promise<{ data: Snapshot | null; error: boolean }> {
   try {
     const res = await fetch(`/api/gantt?id=${id}`)
-    if (!res.ok) return null
+    if (!res.ok) return { data: null, error: true }
     const { data } = await res.json()
-    return data ?? null
+    return { data: data ?? null, error: false }
   } catch {
-    return null
+    return { data: null, error: true }
   }
 }
 
-async function saveToServer(id: string, snapshot: Snapshot) {
+async function saveToServer(id: string, snapshot: Snapshot): Promise<boolean> {
   try {
-    await fetch(`/api/gantt?id=${id}`, {
+    const res = await fetch(`/api/gantt?id=${id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(snapshot),
     })
+    return res.ok
   } catch {
-    // silent — localStorage still works as fallback
+    return false
   }
 }
 
@@ -40,10 +41,11 @@ function makeInitialData() {
   const fmt = (d: Date) => formatDate(d)
 
   const rows: Row[] = [
-    { id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true },
-    { id: 'row-1', name: 'Product', order: 0 },
-    { id: 'row-2', name: 'Design', order: 1 },
-    { id: 'row-3', name: 'Engineering', order: 2 },
+    { id: 'group-planning', name: 'Planning', order: 0, type: 'group', collapsed: false },
+    { id: 'row-1', name: 'Product', order: 0, type: 'lane', parentGroupId: 'group-planning' },
+    { id: 'row-2', name: 'Design', order: 1, type: 'lane', parentGroupId: 'group-planning' },
+    { id: 'row-3', name: 'Engineering', order: 2, type: 'lane', parentGroupId: 'group-planning' },
+    { id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true, type: 'system' },
   ]
 
   // Use the first 6 entries from the Tiimely palette in order
@@ -147,12 +149,17 @@ interface GanttStore {
   sidePanelOpen: boolean
   darkMode: boolean
 
+  // Transient editing state (not persisted)
+  editingRowId: string | null
+  newRowId: string | null
+
   // Undo / redo stacks (not persisted)
   past: Snapshot[]
   future: Snapshot[]
 
   // Internal
   _colorIndex: number
+  syncStatus: 'idle' | 'saving' | 'saved' | 'error'
 
   // ---- Actions ----
 
@@ -178,6 +185,13 @@ interface GanttStore {
   deleteRow: (id: string) => void
   moveRowUp: (id: string) => void
   moveRowDown: (id: string) => void
+
+  // Groups & Lanes
+  addGroup: (name?: string) => string
+  toggleGroup: (groupId: string) => void
+  addLane: (opts?: { groupId?: string; name?: string }) => string
+  beginEditRow: (rowId: string) => void
+  endEditRow: () => void
 
   // Dividers
   addDivider: (d: Omit<Divider, 'id'>) => void
@@ -222,9 +236,12 @@ export const useGanttStore = create<GanttStore>()(
       selectedTaskId: null,
       sidePanelOpen: false,
       darkMode: false,
+      editingRowId: null,
+      newRowId: null,
       past: [],
       future: [],
       _colorIndex: initial.tasks.length,
+      syncStatus: 'idle' as const,
 
       // ---------------------------------------------------------------
       // Internal helpers
@@ -244,7 +261,15 @@ export const useGanttStore = create<GanttStore>()(
       _save: () => {
         const { projectId, tasks, rows, dividers, dependencies } = get()
         if (!projectId) return
-        saveToServer(projectId, { tasks, rows, dividers, dependencies })
+        set({ syncStatus: 'saving' })
+        saveToServer(projectId, { tasks, rows, dividers, dependencies }).then((ok) => {
+          set({ syncStatus: ok ? 'saved' : 'error' })
+          if (ok) {
+            setTimeout(() => {
+              if (get().syncStatus === 'saved') set({ syncStatus: 'idle' })
+            }, 2000)
+          }
+        })
       },
 
       // ---------------------------------------------------------------
@@ -269,6 +294,8 @@ export const useGanttStore = create<GanttStore>()(
       // Tasks
       // ---------------------------------------------------------------
       addTask: (partial) => {
+        // Reject invalid date range
+        if (partial.startDate > partial.endDate) return ''
         get()._pushHistory()
         const { _colorIndex } = get()
         // Single source of truth: Tiimely palette from colors.ts
@@ -291,9 +318,26 @@ export const useGanttStore = create<GanttStore>()(
       },
 
       updateTask: (id, updates) => {
+        const task = get().tasks.find((t) => t.id === id)
+        if (!task) return
+
+        // Enforce startDate <= endDate, clamping to a 1-day task rather than allowing inversion
+        let safeUpdates = { ...updates }
+        const nextStart = updates.startDate ?? task.startDate
+        const nextEnd = updates.endDate ?? task.endDate
+        if (nextStart > nextEnd) {
+          if (updates.startDate !== undefined && updates.endDate === undefined) {
+            safeUpdates = { ...safeUpdates, endDate: updates.startDate }
+          } else if (updates.endDate !== undefined && updates.startDate === undefined) {
+            safeUpdates = { ...safeUpdates, startDate: updates.endDate }
+          } else {
+            return
+          }
+        }
+
         get()._pushHistory()
         set((s) => ({
-          tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...safeUpdates } : t)),
         }))
         get()._save()
       },
@@ -314,17 +358,9 @@ export const useGanttStore = create<GanttStore>()(
       // ---------------------------------------------------------------
       // Rows
       // ---------------------------------------------------------------
-      addRow: (name) => {
-        get()._pushHistory()
-        const { rows } = get()
-        const nextOrder = rows.length > 0 ? Math.max(...rows.map((r) => r.order)) + 1 : 0
-        const newRow: Row = {
-          id: uuidv4(),
-          name: name ?? `Lane ${nextOrder + 1}`,
-          order: nextOrder,
-        }
-        set((s) => ({ rows: [...s.rows, newRow] }))
-        get()._save()
+      addRow: (name?: string) => {
+        const id = get().addLane({ name })
+        get().beginEditRow(id)
       },
 
       updateRow: (id, updates) => {
@@ -337,49 +373,131 @@ export const useGanttStore = create<GanttStore>()(
 
       deleteRow: (id) => {
         const row = get().rows.find((r) => r.id === id)
-        if (row?.isSystem) return // system rows cannot be deleted
+        if (row?.isSystem || row?.type === 'system') return
         get()._pushHistory()
-        set((s) => ({
-          rows: s.rows.filter((r) => r.id !== id),
-          tasks: s.tasks.filter((t) => t.rowId !== id),
-        }))
+        if (row?.type === 'group') {
+          const childIds = new Set(get().rows.filter(r => r.parentGroupId === id).map(r => r.id))
+          set(s => ({
+            rows: s.rows.filter(r => r.id !== id && r.parentGroupId !== id),
+            tasks: s.tasks.filter(t => !childIds.has(t.rowId)),
+            selectedTaskId: childIds.has(s.selectedTaskId ?? '') ? null : s.selectedTaskId,
+            sidePanelOpen: childIds.has(s.selectedTaskId ?? '') ? false : s.sidePanelOpen,
+          }))
+        } else {
+          set(s => ({
+            rows: s.rows.filter(r => r.id !== id),
+            tasks: s.tasks.filter(t => t.rowId !== id),
+            selectedTaskId: s.selectedTaskId && s.tasks.find(t => t.id === s.selectedTaskId)?.rowId === id ? null : s.selectedTaskId,
+            sidePanelOpen: s.selectedTaskId && s.tasks.find(t => t.id === s.selectedTaskId)?.rowId === id ? false : s.sidePanelOpen,
+          }))
+        }
         get()._save()
       },
 
       moveRowUp: (id) => {
-        const row = get().rows.find((r) => r.id === id)
-        if (row?.isSystem) return
+        const row = get().rows.find(r => r.id === id)
+        if (!row || row.isSystem || row.type === 'system') return
         get()._pushHistory()
-        set((s) => {
-          const sorted = [...s.rows].sort((a, b) => a.order - b.order)
-          const idx = sorted.findIndex((r) => r.id === id)
-          // Don't swap with system rows
-          if (idx <= 0 || sorted[idx - 1].isSystem) return {}
-          const rows = sorted.map((r, i) => {
-            if (i === idx) return { ...r, order: sorted[idx - 1].order }
-            if (i === idx - 1) return { ...r, order: sorted[idx].order }
-            return r
-          })
-          return { rows }
+        set(s => {
+          if (row.type === 'group') {
+            const sorted = s.rows.filter(r => r.type === 'group').sort((a, b) => a.order - b.order)
+            const idx = sorted.findIndex(r => r.id === id)
+            if (idx <= 0) return {}
+            return {
+              rows: s.rows.map(r => {
+                if (r.id === id) return { ...r, order: sorted[idx - 1].order }
+                if (r.id === sorted[idx - 1].id) return { ...r, order: sorted[idx].order }
+                return r
+              })
+            }
+          } else {
+            const sorted = s.rows.filter(r => r.parentGroupId === row.parentGroupId && r.type === 'lane').sort((a, b) => a.order - b.order)
+            const idx = sorted.findIndex(r => r.id === id)
+            if (idx <= 0) return {}
+            return {
+              rows: s.rows.map(r => {
+                if (r.id === id) return { ...r, order: sorted[idx - 1].order }
+                if (r.id === sorted[idx - 1].id) return { ...r, order: sorted[idx].order }
+                return r
+              })
+            }
+          }
         })
+        get()._save()
       },
 
       moveRowDown: (id) => {
-        const row = get().rows.find((r) => r.id === id)
-        if (row?.isSystem) return
+        const row = get().rows.find(r => r.id === id)
+        if (!row || row.isSystem || row.type === 'system') return
         get()._pushHistory()
-        set((s) => {
-          const sorted = [...s.rows].sort((a, b) => a.order - b.order)
-          const idx = sorted.findIndex((r) => r.id === id)
-          if (idx >= sorted.length - 1) return {}
-          const rows = sorted.map((r, i) => {
-            if (i === idx) return { ...r, order: sorted[idx + 1].order }
-            if (i === idx + 1) return { ...r, order: sorted[idx].order }
-            return r
-          })
-          return { rows }
+        set(s => {
+          if (row.type === 'group') {
+            const sorted = s.rows.filter(r => r.type === 'group').sort((a, b) => a.order - b.order)
+            const idx = sorted.findIndex(r => r.id === id)
+            if (idx >= sorted.length - 1) return {}
+            return {
+              rows: s.rows.map(r => {
+                if (r.id === id) return { ...r, order: sorted[idx + 1].order }
+                if (r.id === sorted[idx + 1].id) return { ...r, order: sorted[idx].order }
+                return r
+              })
+            }
+          } else {
+            const sorted = s.rows.filter(r => r.parentGroupId === row.parentGroupId && r.type === 'lane').sort((a, b) => a.order - b.order)
+            const idx = sorted.findIndex(r => r.id === id)
+            if (idx >= sorted.length - 1) return {}
+            return {
+              rows: s.rows.map(r => {
+                if (r.id === id) return { ...r, order: sorted[idx + 1].order }
+                if (r.id === sorted[idx + 1].id) return { ...r, order: sorted[idx].order }
+                return r
+              })
+            }
+          }
         })
+        get()._save()
       },
+
+      // ---------------------------------------------------------------
+      // Groups & Lanes
+      // ---------------------------------------------------------------
+      addGroup: (name) => {
+        get()._pushHistory()
+        const { rows } = get()
+        const groups = rows.filter(r => r.type === 'group')
+        const nextOrder = groups.length > 0 ? Math.max(...groups.map(r => r.order)) + 1 : 0
+        const id = uuidv4()
+        const group: Row = { id, name: name ?? 'New Group', order: nextOrder, type: 'group', collapsed: false }
+        set(s => ({ rows: [...s.rows, group] }))
+        get()._save()
+        get().beginEditRow(id)
+        return id
+      },
+
+      toggleGroup: (groupId) => {
+        set(s => ({ rows: s.rows.map(r => r.id === groupId ? { ...r, collapsed: !r.collapsed } : r) }))
+        get()._save()
+      },
+
+      addLane: (opts = {}) => {
+        get()._pushHistory()
+        const { rows } = get()
+        const groups = rows.filter(r => r.type === 'group').sort((a, b) => a.order - b.order)
+        const targetGroupId = opts.groupId ?? groups[0]?.id
+        const siblings = rows.filter(r => targetGroupId ? r.parentGroupId === targetGroupId : (!r.type && !r.isSystem))
+        const nextOrder = siblings.length > 0 ? Math.max(...siblings.map(r => r.order)) + 1 : 0
+        const id = uuidv4()
+        const lane: Row = {
+          id, name: opts.name ?? '', order: nextOrder, type: 'lane',
+          ...(targetGroupId ? { parentGroupId: targetGroupId } : {}),
+        }
+        set(s => ({ rows: [...s.rows, lane] }))
+        get()._save()
+        return id
+      },
+
+      beginEditRow: (rowId) => set({ editingRowId: rowId, newRowId: rowId }),
+      endEditRow: () => set({ editingRowId: null, newRowId: null }),
 
       // ---------------------------------------------------------------
       // Dividers
@@ -489,35 +607,38 @@ export const useGanttStore = create<GanttStore>()(
       },
 
       clearAll: () => {
+        const defaultGroup: Row = { id: 'group-default', name: 'Ungrouped', order: 0, type: 'group', collapsed: false }
+        const systemRow: Row = { id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true, type: 'system' }
         set({
-          tasks: [],
-          rows: [{ id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true }],
-          dividers: [],
-          dependencies: [],
-          past: [],
-          future: [],
-          selectedTaskId: null,
-          sidePanelOpen: false,
+          tasks: [], rows: [defaultGroup, systemRow],
+          dividers: [], dependencies: [], past: [], future: [],
+          selectedTaskId: null, sidePanelOpen: false,
         })
-        const pid = get().projectId; if (pid) saveToServer(pid, { tasks: [], rows: [{ id: 'row-unassigned', name: 'Staging', order: 9999, isSystem: true }], dividers: [], dependencies: [] })
+        const pid = get().projectId
+        if (pid) saveToServer(pid, { tasks: [], rows: [defaultGroup, systemRow], dividers: [], dependencies: [] })
       },
 
       syncFromServer: async (id: string) => {
-        const snapshot = await loadFromServer(id)
-        if (!snapshot) return
-        set({
-          tasks: snapshot.tasks,
-          rows: snapshot.rows,
-          dividers: snapshot.dividers,
-          dependencies: snapshot.dependencies,
-          past: [],
-          future: [],
-        })
+        const { data, error } = await loadFromServer(id)
+        if (error) { set({ syncStatus: 'error' }); return }
+        if (!data) return
+        let rows = data.rows
+        const needsMigration = !rows.some(r => r.type === 'group')
+        if (needsMigration) {
+          const ungroupedId = 'group-ungrouped'
+          rows = [
+            { id: ungroupedId, name: 'Ungrouped', order: 0, type: 'group' as const, collapsed: false },
+            ...rows.filter(r => !r.isSystem).map(r => ({ ...r, type: 'lane' as const, parentGroupId: ungroupedId })),
+            ...rows.filter(r => r.isSystem).map(r => ({ ...r, type: 'system' as const })),
+          ]
+        }
+        set({ tasks: data.tasks, rows, dividers: data.dividers, dependencies: data.dependencies, past: [], future: [], syncStatus: 'idle' })
+        if (needsMigration) saveToServer(id, { tasks: data.tasks, rows, dividers: data.dividers, dependencies: data.dependencies })
       },
     }),
     {
-      name: 'mrgant-v6',
-      // Only persist data + view — not UI state or history stacks
+      name: 'mrgant-v7',
+      // Only persist data + view — not UI state, history stacks, or sync status
       partialize: (state) => ({
         tasks: state.tasks,
         rows: state.rows,

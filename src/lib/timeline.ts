@@ -20,6 +20,7 @@ export const HEADER_HEIGHT = 64  // 2-row header: 32 + 32
 export const ROW_HEIGHT = 44     // per sub-lane
 export const TASK_HEIGHT = 28
 export const TASK_TOP_OFFSET = 8
+export const GROUP_HEADER_HEIGHT = 28
 
 export function parseDate(s: string): Date {
   return new Date(s + 'T00:00:00')

@@ -29,7 +29,7 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
   const {
     viewState, setViewState, addRow, addDivider,
     undo, redo, past, future, darkMode, toggleDarkMode, clearAll,
-    tasks, rows, dividers, projectId,
+    tasks, rows, dividers, projectId, syncStatus,
   } = useGanttStore()
   const theme = useTheme()
 
@@ -313,6 +313,36 @@ export function Toolbar({ onHome }: { onHome?: () => void }) {
       </span>
 
       <div style={{ flex: 1 }} />
+
+      {/* Sync status indicator */}
+      {syncStatus !== 'idle' && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          fontSize: 11, fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+          color: syncStatus === 'error' ? '#ff6b6b' : syncStatus === 'saving' ? T.midGray : '#55F366',
+          opacity: 0.9,
+          flexShrink: 0,
+        }}>
+          {syncStatus === 'saving' && (
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+              <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="1.5" strokeDasharray="6 6" />
+            </svg>
+          )}
+          {syncStatus === 'saved' && (
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="2,5.5 4.5,8 9,3" />
+            </svg>
+          )}
+          {syncStatus === 'error' && (
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <line x1="2" y1="2" x2="9" y2="9" /><line x1="9" y1="2" x2="2" y2="9" />
+            </svg>
+          )}
+          <span>
+            {syncStatus === 'saving' ? 'Saving…' : syncStatus === 'saved' ? 'Saved' : 'Save failed'}
+          </span>
+        </div>
+      )}
 
       {/* Today */}
       <ToolbarBtn onClick={jumpToToday} title="Jump to today">

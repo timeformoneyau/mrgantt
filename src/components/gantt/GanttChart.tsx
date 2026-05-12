@@ -16,11 +16,13 @@ import {
   LEFT_PANEL_WIDTH,
   HEADER_HEIGHT,
   ROW_HEIGHT,
+  GROUP_HEADER_HEIGHT,
   dateToX,
   parseDate,
   formatDate,
 } from '@/lib/timeline'
 import { getSubLaneCount } from '@/lib/taskLayout'
+import { sortedVisibleRows, isGroupRow } from '@/lib/rowUtils'
 import { useTheme } from '@/lib/theme'
 import { Task, Row } from '@/types'
 
@@ -79,11 +81,7 @@ export function GanttChart({ onHome }: { onHome?: () => void }) {
   const tasksRef = useRef<Task[]>([])
   const viewStateDayWidthRef = useRef(viewState.dayWidth)
 
-  const sortedRows = [...rows].sort((a, b) => {
-    if (a.isSystem && !b.isSystem) return 1
-    if (!a.isSystem && b.isSystem) return -1
-    return a.order - b.order
-  })
+  const sortedRows = sortedVisibleRows(rows)
   sortedRowsRef.current = sortedRows
   tasksRef.current = tasks
   viewStateDayWidthRef.current = viewState.dayWidth
@@ -163,17 +161,21 @@ export function GanttChart({ onHome }: { onHome?: () => void }) {
     const tks = tasksRef.current
 
     let y = 0
+    let lastLaneId: string | null = null
     for (const row of sorted) {
-      const rowTasks = tks.filter((t) => t.rowId === row.id)
-      const numLanes = Math.max(1, getSubLaneCount(rowTasks))
-      const h = numLanes * ROW_HEIGHT
-      if (relY >= y && relY < y + h) return row.id
+      const h = isGroupRow(row)
+        ? GROUP_HEADER_HEIGHT
+        : Math.max(1, getSubLaneCount(tks.filter(t => t.rowId === row.id))) * ROW_HEIGHT
+
+      if (relY >= y && relY < y + h) {
+        return isGroupRow(row) ? null : row.id
+      }
+      if (!isGroupRow(row)) lastLaneId = row.id
       y += h
     }
-    // Clamp to first / last row
-    if (relY < 0 && sorted.length > 0) return sorted[0].id
-    if (sorted.length > 0) return sorted[sorted.length - 1].id
-    return null
+    // Clamp to first / last lane row
+    if (relY < 0) return sorted.find(r => !isGroupRow(r))?.id ?? null
+    return lastLaneId
   }, []) // intentionally empty — reads from refs
 
   const getRowIdFromClientYRef = useRef(getRowIdFromClientY)
@@ -316,15 +318,21 @@ export function GanttChart({ onHome }: { onHome?: () => void }) {
   let totalHeight = 0
   for (const row of sortedRows) {
     rowYPositions.set(row.id, totalHeight)
-    const rowTasks = tasks.filter((t) => t.rowId === row.id)
-    const numLanes = Math.max(1, getSubLaneCount(rowTasks))
-    totalHeight += numLanes * ROW_HEIGHT
+    if (isGroupRow(row)) {
+      totalHeight += GROUP_HEADER_HEIGHT
+    } else {
+      const rowTasks = tasks.filter((t) => t.rowId === row.id)
+      const numLanes = Math.max(1, getSubLaneCount(rowTasks))
+      totalHeight += numLanes * ROW_HEIGHT
+    }
   }
 
   // ---------------------------------------------------------------------------
   // Empty state
   // ---------------------------------------------------------------------------
-  if (rows.length === 0) {
+  const hasLaneContent = rows.some(r => r.type === 'lane' || (!r.type && !r.isSystem))
+  const hasGroups = rows.some(r => r.type === 'group')
+  if (!hasLaneContent && !hasGroups) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bg }}>
         <Toolbar onHome={onHome} />

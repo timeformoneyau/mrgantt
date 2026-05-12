@@ -14,6 +14,9 @@ export interface Row {
   name: string
   order: number
   isSystem?: boolean // true for built-in rows (e.g. Unassigned) — cannot be deleted or reordered
+  type?: 'group' | 'lane' | 'system'
+  parentGroupId?: string   // for lanes: which group owns them
+  collapsed?: boolean      // for groups: whether children are hidden
 }
 
 export interface Divider {

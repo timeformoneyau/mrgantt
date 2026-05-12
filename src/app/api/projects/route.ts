@@ -14,7 +14,15 @@ export async function GET() {
 
 // POST /api/projects — create a new empty project
 export async function POST(req: Request) {
-  const { name } = await req.json()
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  const rawName = (body as Record<string, unknown>)?.name
+  const name = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : 'Untitled'
 
   const { data, error } = await supabase
     .from('gantt_plans')
